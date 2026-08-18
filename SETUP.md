@@ -14,15 +14,10 @@ No native Windows/Mac/iOS/Android build tools required — it's all standard web
   (Visual Studio Installer > Modify > tick that workload if you don't already have it)
 - Or, if you prefer the command line: the **.NET 8 SDK** from https://dotnet.microsoft.com/download
 
-## Option A: Run from Visual Studio
 
-1. Open `GroceryBudgetWeb.sln`-less folder directly: **File > Open > Folder...** and select the `GroceryBudgetWeb` folder (or double-click `GroceryBudgetWeb.csproj` if you generate a solution).
-2. Press **F5** (or the green "Run" button). Visual Studio will build and launch the app in your default browser automatically.
-
-## Option B: Run from the command line
+## Run from the command line
 
 ```bash
-cd GroceryBudgetWeb
 dotnet restore
 dotnet run
 ```

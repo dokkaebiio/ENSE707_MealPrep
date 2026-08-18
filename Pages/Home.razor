@@ -2,9 +2,108 @@
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
-<div class="app-container">
-    <h1>🛒 Grocery Cart &amp; Budget Planner</h1>
-    <p>If you can see this, the project is set up correctly. Time to start building!</p>
+<div class="top-nav">
+    <span class="nav-badge">MealPlan</span>
+    <nav class="nav-links">
+        <!-- buttons/links go here -->
+    </nav>
+</div>
+
+<div class="page-layout">
+
+    <div class="main-content">
+        <div class="search-row">
+            <input type="text" placeholder="Search items..." class="search-box" />
+            <select class="category-select">
+                <option value="All">All</option>
+                <option value="Produce">Produce</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Bakery">Bakery</option>
+                <option value="Meat">Meat</option>
+                <option value="Pantry">Pantry</option>
+            </select>
+            <input type="button" value="Search" class="search-button" />
+        </div>
+
+        <div class="Search-results">
+            <!-- Example item card — you'll loop over real data later -->
+            <div class="item-card">
+                <div class="item-emoji">🥛</div>
+                <div class="item-name">Milk (2L)</div>
+                <div class="item-price">$4.30 each</div>
+                <div class="item-actions">
+                    <button class="qty-btn">−</button>
+                    <div class="qty-display">1</div>
+                    <button class="qty-btn">+</button>
+                    <button class="add-btn">Add</button>
+                </div>
+            </div>
+
+            <div class="item-card">
+                <div class="item-emoji">🍞</div>
+                <div class="item-name">Bread</div>
+                <div class="item-price">$3.20 each</div>
+                <div class="item-actions">
+                    <button class="qty-btn">−</button>
+                    <div class="qty-display">1</div>
+                    <button class="qty-btn">+</button>
+                    <button class="add-btn">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<aside class="sidebar">
+    <div class="sidebar-card">
+
+        <div class="budget-planner-section">
+            <h2>Budget Planner</h2>
+            <div class="budget-inputs">
+                <label for="budget">Set your budget:</label>
+                <input type="number" id="budget" placeholder="$0.00" />
+                <button class="set-budget-btn">Set Budget</button>
+            </div>
+            <div class="budget-summary">
+                <div class="budget-amount">Budget: $0.00</div>
+            </div>
+        </div>
+
+        <hr class="sidebar-divider" />
+
+<div class="cart-summary-section">
+    <h2>Cart</h2>
+
+    <div class="cart-items">
+        <!-- Example cart item — you'll loop over real data later -->
+        <div class="cart-item-row">
+            <div class="item-emoji">🥛</div>
+            <div class="cart-item-info">
+                <div class="item-name">Milk (2L)</div>
+                <div class="item-price">$4.30 each</div>
+            </div>
+            <div class="cart-item-qty">Qty: 1</div>
+            <button class="remove-btn">✕</button>
+        </div>
+
+        <div class="cart-item-row">
+            <div class="item-emoji">🍞</div>
+            <div class="cart-item-info">
+                <div class="item-name">Bread</div>
+                <div class="item-price">$3.20 each</div>
+            </div>
+            <div class="cart-item-qty">Qty: 1</div>
+            <button class="remove-btn">✕</button>
+        </div>
+    </div>
+
+    <div class="cart-summary-total">
+        Total: $7.50
+    </div>
+</div>
+
+    </div>
+</aside>
+
 </div>
 
 @code {
