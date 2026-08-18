@@ -1,0 +1,82 @@
+# Setup Guide — Budget Grocery List (Blazor WebAssembly PWA)
+
+## What this is
+
+A single C# codebase that runs as:
+- a **website** (any desktop or phone browser), and
+- an **installable app** (via "Install app" / "Add to Home Screen" in the browser, thanks to the included PWA manifest + service worker)
+
+No native Windows/Mac/iOS/Android build tools required — it's all standard web tech under the hood (WebAssembly), just written in C#/Razor instead of JavaScript.
+
+## Prerequisites
+
+- **Visual Studio 2022** (Community edition is free) with the **"ASP.NET and web development"** workload installed
+  (Visual Studio Installer > Modify > tick that workload if you don't already have it)
+- Or, if you prefer the command line: the **.NET 8 SDK** from https://dotnet.microsoft.com/download
+
+## Option A: Run from Visual Studio
+
+1. Open `GroceryBudgetWeb.sln`-less folder directly: **File > Open > Folder...** and select the `GroceryBudgetWeb` folder (or double-click `GroceryBudgetWeb.csproj` if you generate a solution).
+2. Press **F5** (or the green "Run" button). Visual Studio will build and launch the app in your default browser automatically.
+
+## Option B: Run from the command line
+
+```bash
+cd GroceryBudgetWeb
+dotnet restore
+dotnet run
+```
+
+It will print a local URL (usually `https://localhost:7xxx` or `http://localhost:5xxx`) — open that in your browser.
+
+## Testing the "installable app" behaviour
+
+1. Run the app and open it in **Chrome** or **Edge**.
+2. Look for an **install icon** in the address bar (or Menu > "Install Budget Grocery List...").
+3. Click it — the app opens in its own window without browser tabs/address bar, like a real app.
+4. On a **phone browser**, look for "Add to Home Screen" in the browser menu — same effect, gives you a home screen icon.
+
+> Note: full offline caching and the installability prompt are most reliable in a **published/release** build (`dotnet publish -c Release`) served over **https**, rather than the plain dev server. For a quick class demo, the dev server (`dotnet run`) is normally sufficient to show the UI and install prompt.
+
+## Project structure
+
+```
+GroceryBudgetWeb/
+├── GroceryBudgetWeb.csproj
+├── Program.cs                # App startup
+├── App.razor                 # Root router
+├── _Imports.razor            # Global using directives
+├── Layout/
+│   └── MainLayout.razor
+├── Pages/
+│   └── Home.razor            # The entire app UI + logic lives here
+├── Models/
+│   ├── GroceryItem.cs        # A preset catalog item
+│   └── ListLineItem.cs       # A row in the user's list
+└── wwwroot/
+    ├── index.html            # HTML shell
+    ├── manifest.json         # PWA manifest
+    ├── service-worker.js     # Enables offline caching + installability
+    ├── icon-192.png / icon-512.png / favicon.png
+    ├── css/app.css           # All styling — edit this to restyle the app
+    └── data/items.json       # Preset ~50-item dataset (id, name, category, price, emoji)
+```
+
+## Requirement coverage
+
+| Requirement | Covered by |
+|---|---|
+| FR1 — browse/search preset dataset | Search box + category dropdown in `Home.razor` |
+| FR2 — add item with quantity | Per-card +/- counter and Add button |
+| FR3 — auto-populate price | Price pulled from `data/items.json` on add |
+| FR4 — remove item | "✕" button per list row |
+| FR5 — change quantity | Editable quantity field per list row |
+| FR6 — live running total | Recalculated automatically on every state change |
+| FR7 — set/edit budget | Budget input at top |
+| FR8 — over/under/at-budget indicator | Colour-coded status banner |
+| FR9 — clear list | "Clear list" button |
+| NFR5 — dataset separate from code | `wwwroot/data/items.json` |
+
+## A note on styling
+
+All visual styling lives in one file: `wwwroot/css/app.css`. Colours are defined as CSS variables at the top (`--accent`, `--success-bg`, etc.) — change those to re-theme the whole app without touching individual element styles.
