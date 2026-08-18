@@ -1,4 +1,4 @@
-namespace GroceryBudgetWeb.Models
+namespace MealPrep.Models
 {
     // One row in the user's current grocery list.
     // Blazor re-renders the component on any state change, so this doesn't

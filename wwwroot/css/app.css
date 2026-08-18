@@ -108,6 +108,7 @@ body {
 
 .category-select {
     flex: 1;
+    width: 100%;
     padding: 8px 10px;
     border: 1px solid #DDDDDD;
     border-radius: 6px;

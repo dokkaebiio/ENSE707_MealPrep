@@ -1,4 +1,4 @@
-namespace GroceryBudgetWeb.Models
+namespace MealPrep.Models
 {
     // One row from the preset item dataset (wwwroot/data/items.json).
     // Kept as a separate JSON file, not hard-coded, so items/prices can be

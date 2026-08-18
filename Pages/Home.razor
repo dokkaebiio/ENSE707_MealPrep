@@ -1,4 +1,5 @@
 @page "/"
+@inject HttpClient Http
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
@@ -13,43 +14,33 @@
 
     <div class="main-content">
         <div class="search-row">
-            <input type="text" placeholder="Search items..." class="search-box" />
-            <select class="category-select">
-                <option value="All">All</option>
-                <option value="Produce">Produce</option>
-                <option value="Dairy">Dairy</option>
-                <option value="Bakery">Bakery</option>
-                <option value="Meat">Meat</option>
-                <option value="Pantry">Pantry</option>
-            </select>
+            <input type="text" placeholder="Search items..." class="search-box" @bind="SearchText" 
+            @bind:event="oninput" />
+<select class="category-select" @bind="SelectedCategory">
+    <option value="All">All</option>
+    @foreach (var cat in AllItems.Select(i => i.Category).Distinct().OrderBy(c => c))
+    {
+        <option value="@cat">@cat</option>
+    }
+</select>   
             <input type="button" value="Search" class="search-button" />
         </div>
 
         <div class="Search-results">
-            <!-- Example item card — you'll loop over real data later -->
-            <div class="item-card">
-                <div class="item-emoji">🥛</div>
-                <div class="item-name">Milk (2L)</div>
-                <div class="item-price">$4.30 each</div>
-                <div class="item-actions">
-                    <button class="qty-btn">−</button>
-                    <div class="qty-display">1</div>
-                    <button class="qty-btn">+</button>
-                    <button class="add-btn">Add</button>
+            @foreach (var item in FilteredItems)
+            {
+                <div class="item-card">
+                    <div class="item-emoji">@item.Emoji</div>
+                    <div class="item-name">@item.Name</div>
+                    <div class="item-price">$@item.Price.ToString("F2") each</div>
+                    <div class="item-actions">
+                        <button class="qty-btn">−</button>
+                        <div class="qty-display">1</div>
+                        <button class="qty-btn">+</button>
+                        <button class="add-btn">Add</button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="item-card">
-                <div class="item-emoji">🍞</div>
-                <div class="item-name">Bread</div>
-                <div class="item-price">$3.20 each</div>
-                <div class="item-actions">
-                    <button class="qty-btn">−</button>
-                    <div class="qty-display">1</div>
-                    <button class="qty-btn">+</button>
-                    <button class="add-btn">Add</button>
-                </div>
-            </div>
+            }
         </div>
     </div>
 
@@ -107,6 +98,17 @@
 </div>
 
 @code {
-    // Your cart-building and budget-planner logic will go here.
-    // See the roadmap for suggested steps.
+private List<GroceryItem> AllItems = new();
+
+protected override async Task OnInitializedAsync()
+{
+    AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
+}
+private string SearchText = "";
+private string SelectedCategory = "All";
+
+private IEnumerable<GroceryItem> FilteredItems =>
+    AllItems.Where(i =>
+        (SelectedCategory == "All" || i.Category == SelectedCategory) &&
+        (string.IsNullOrWhiteSpace(SearchText) || i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
 }
