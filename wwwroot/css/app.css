@@ -260,3 +260,86 @@ body {
     width: 100%;
     z-index: 1000;
 }
+
+.budget-summary.budget-none {
+    border-left: 4px solid #3b82f6;
+}
+
+.budget-summary.budget-good {
+    border-left: 4px solid #22c55e;
+}
+
+.budget-summary.budget-warning {
+    border-left: 4px solid #eab308;
+}
+
+.budget-summary.budget-danger {
+    border-left: 4px solid #ef4444;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    max-width: 320px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.budget-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+    .budget-inputs input#budget {
+        flex: 1;
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
+.set-budget-btn {
+    background: #2E5B8A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .set-budget-btn:hover {
+        opacity: 0.9;
+    }
+
+.modal-actions button {
+    background: #2E5B8A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .modal-actions button:hover {
+        opacity: 0.9;
+    }

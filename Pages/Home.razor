@@ -37,7 +37,7 @@
                         <button class="qty-btn">−</button>
                         <div class="qty-display">1</div>
                         <button class="qty-btn">+</button>
-                        <button class="add-btn">Add</button>
+                        <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
                     </div>
                 </div>
             }
@@ -51,51 +51,71 @@
             <h2>Budget Planner</h2>
             <div class="budget-inputs">
                 <label for="budget">Set your budget:</label>
-                <input type="number" id="budget" placeholder="$0.00" />
-                <button class="set-budget-btn">Set Budget</button>
+                <input type="number" id="budget" placeholder="$0.00"
+                       @bind="BudgetInput" @bind:event="oninput" />
+                <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
             </div>
-            <div class="budget-summary">
-                <div class="budget-amount">Budget: $0.00</div>
+
+            <div class="budget-summary budget-@BudgetStatusClass">
+                <div class="budget-amount">
+                    Budget: @(Budget.HasValue ? $"${Budget:F2}" : "Not set")
+                </div>
+                <div class="budget-total">
+                    Spent: $@RunningTotal.ToString("F2")
+                    @if (Budget.HasValue)
+                    {
+                        <span> (@BudgetPercent.ToString("F0")%)</span>
+                    }
+                </div>
+                <div class="budget-status-label">@BudgetStatusText</div>
             </div>
         </div>
 
         <hr class="sidebar-divider" />
 
 <div class="cart-summary-section">
-    <h2>Cart</h2>
+            <h2>Cart</h2>
 
-    <div class="cart-items">
-        <!-- Example cart item — you'll loop over real data later -->
-        <div class="cart-item-row">
-            <div class="item-emoji">🥛</div>
-            <div class="cart-item-info">
-                <div class="item-name">Milk (2L)</div>
-                <div class="item-price">$4.30 each</div>
+            <div class="cart-items">
+                @foreach (var line in Cart)
+                {
+                    <div class="cart-item-row">
+                        <div class="cart-item-info">
+                            <div class="item-name">@line.Name</div>
+                            <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
+                        </div>
+                        <div class="cart-item-qty">Qty: @line.Qty</div>
+                        <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
+                    </div>
+                }
             </div>
-            <div class="cart-item-qty">Qty: 1</div>
-            <button class="remove-btn">✕</button>
-        </div>
 
-        <div class="cart-item-row">
-            <div class="item-emoji">🍞</div>
-            <div class="cart-item-info">
-                <div class="item-name">Bread</div>
-                <div class="item-price">$3.20 each</div>
+            <div class="cart-summary-total">
+                Total: $@RunningTotal.ToString("F2")
             </div>
-            <div class="cart-item-qty">Qty: 1</div>
-            <button class="remove-btn">✕</button>
         </div>
-    </div>
-
-    <div class="cart-summary-total">
-        Total: $7.50
-    </div>
-</div>
 
     </div>
 </aside>
 
 </div>
+
+@if (PendingItem is not null)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <p>
+                Adding <strong>@PendingItem.Name</strong> will take you to
+                $@PendingTotalIfAdded.ToString("F2"), over your $@Budget?.ToString("F2") budget.
+            </p>
+            <div class="modal-actions">
+                <button @onclick="ConfirmAddAnyway">Add anyway</button>
+                <button @onclick="CancelPendingAdd">Cancel</button>
+                <button @onclick="GoChangeBudget">Change budget</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
 private List<GroceryItem> AllItems = new();
@@ -111,4 +131,99 @@ private IEnumerable<GroceryItem> FilteredItems =>
     AllItems.Where(i =>
         (SelectedCategory == "All" || i.Category == SelectedCategory) &&
         (string.IsNullOrWhiteSpace(SearchText) || i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+
+// --- Cart ---
+
+private List<ListLineItem> Cart = new();
+private decimal RunningTotal => Cart.Sum(c => c.LineTotal);
+
+// --- Budget ---
+
+private decimal? Budget;
+private string BudgetInput = "";
+
+private void ApplyBudget()
+{
+    if (decimal.TryParse(BudgetInput, out var val) && val > 0)
+        Budget = val;
+    else
+        Budget = null; // empty/invalid input clears the budget — "no budget" is allowed
+}
+
+private decimal BudgetPercent => Budget.HasValue && Budget > 0
+    ? (RunningTotal / Budget.Value) * 100m
+    : 0;
+
+private string BudgetStatusClass =>
+    Budget is null ? "none" :
+    BudgetPercent >= 90 ? "danger" :
+    BudgetPercent >= 75 ? "warning" :
+    "good";
+
+private string BudgetStatusText =>
+    Budget is null ? "No budget set" :
+    BudgetPercent >= 90 ? "Almost at budget!" :
+    BudgetPercent >= 75 ? "Getting close" :
+    "Looking good";
+
+// --- Add-to-cart with over-budget prompt ---
+
+private GroceryItem? PendingItem;      // item awaiting confirmation
+private decimal PendingTotalIfAdded;   // what the total would become
+
+private void AddToCart(GroceryItem item)
+{
+    var wouldBeTotal = RunningTotal + item.Price;
+
+    if (Budget.HasValue && wouldBeTotal > Budget.Value)
+    {
+        // Don't add yet — ask first
+        PendingItem = item;
+        PendingTotalIfAdded = wouldBeTotal;
+        return;
+    }
+
+    DoAdd(item);
+}
+
+private void DoAdd(GroceryItem item)
+{
+    var existing = Cart.FirstOrDefault(c => c.Id == item.Id);
+    if (existing is not null)
+    {
+        existing.Qty++;
+    }
+    else
+    {
+        Cart.Add(new ListLineItem
+        {
+            Id = item.Id,
+            Name = item.Name,
+            UnitPrice = item.Price,
+            Qty = 1
+        });
+    }
+}
+
+private void ConfirmAddAnyway()
+{
+    if (PendingItem is not null)
+        DoAdd(PendingItem);
+    PendingItem = null;
+}
+
+private void CancelPendingAdd()
+{
+    PendingItem = null;
+}
+
+private void GoChangeBudget()
+{
+    PendingItem = null;
+}
+
+private void RemoveFromCart(ListLineItem line)
+{
+    Cart.Remove(line);
+}
 }
