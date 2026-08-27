@@ -93,6 +93,36 @@
             <div class="cart-summary-total">
                 Total: $@RunningTotal.ToString("F2")
             </div>
+
+            <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
+                Create Recipe from Cart
+            </button>
+        </div>
+
+        <hr class="sidebar-divider" />
+
+        <div class="recipes-section">
+            <h2>Saved Recipes</h2>
+
+            @if (!Recipes.Any())
+            {
+                <div class="recipes-empty">No recipes saved yet.</div>
+            }
+            else
+            {
+                <div class="recipe-list">
+                    @foreach (var recipe in Recipes.OrderBy(r => r.Date))
+                    {
+                        <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                            <div class="recipe-card-name">@recipe.Name</div>
+                            <div class="recipe-card-date">
+                                @(recipe.Date.HasValue ? recipe.Date.Value.ToString("ddd, MMM d") : "No date set")
+                            </div>
+                            <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                        </div>
+                    }
+                </div>
+            }
         </div>
 
     </div>
@@ -112,6 +142,54 @@
                 <button @onclick="ConfirmAddAnyway">Add anyway</button>
                 <button @onclick="CancelPendingAdd">Cancel</button>
                 <button @onclick="GoChangeBudget">Change budget</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowRecipeModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-box recipe-modal-box">
+            <h3>@(EditingRecipe is null ? "New Recipe" : "Edit Recipe")</h3>
+
+            <div class="recipe-form-field">
+                <label for="recipe-name">Recipe name</label>
+                <input type="text" id="recipe-name" placeholder="e.g. Taco Night"
+                       @bind="RecipeNameInput" @bind:event="oninput" />
+            </div>
+
+            <div class="recipe-form-field">
+                <label for="recipe-date">Day to make it</label>
+                <input type="date" id="recipe-date" @bind="RecipeDateInput" />
+            </div>
+
+            <div class="recipe-ingredients-preview">
+                <label>Ingredients</label>
+                <ul>
+                    @{
+                        var ingredientsToShow = EditingRecipe is null ? Cart : EditingRecipe.Ingredients;
+                    }
+                    @foreach (var line in ingredientsToShow)
+                    {
+                        <li>@line.Name (x@(line.Qty))</li>
+                    }
+                </ul>
+            </div>
+
+            @if (!string.IsNullOrEmpty(RecipeErrorMessage))
+            {
+                <div class="recipe-error">@RecipeErrorMessage</div>
+            }
+
+            <div class="modal-actions recipe-modal-actions">
+                <button @onclick="SaveRecipe">@(EditingRecipe is null ? "Save Recipe" : "Save Changes")</button>
+                @if (EditingRecipe is not null)
+                {
+                    <button @onclick="DuplicateRecipeToNewDay">Save on This Day Too</button>
+                    <button class="danger-btn" @onclick="DeleteRecipe">Delete</button>
+                }
+                <button @onclick="CloseRecipeModal">Cancel</button>
             </div>
         </div>
     </div>
@@ -225,5 +303,125 @@ private void GoChangeBudget()
 private void RemoveFromCart(ListLineItem line)
 {
     Cart.Remove(line);
+}
+
+// --- Recipes ---
+
+private List<Recipe> Recipes = new();
+
+private bool ShowRecipeModal = false;
+private Recipe? EditingRecipe = null;   // null => creating a new recipe from the current cart
+private string RecipeNameInput = "";
+private DateTime? RecipeDateInput;
+private string RecipeErrorMessage = "";
+
+private void OpenCreateRecipeModal()
+{
+    if (!Cart.Any())
+        return;
+
+    EditingRecipe = null;
+    RecipeNameInput = "";
+    RecipeDateInput = DateTime.Today;
+    RecipeErrorMessage = "";
+    ShowRecipeModal = true;
+}
+
+private void OpenEditRecipeModal(Recipe recipe)
+{
+    EditingRecipe = recipe;
+    RecipeNameInput = recipe.Name;
+    RecipeDateInput = recipe.Date;
+    RecipeErrorMessage = "";
+    ShowRecipeModal = true;
+}
+
+private void SaveRecipe()
+{
+    if (string.IsNullOrWhiteSpace(RecipeNameInput))
+    {
+        RecipeErrorMessage = "Please give the recipe a name.";
+        return;
+    }
+
+    if (EditingRecipe is null)
+    {
+        // Creating a brand-new recipe from a snapshot of the current cart
+        var newRecipe = new Recipe
+        {
+            Name = RecipeNameInput.Trim(),
+            Date = RecipeDateInput,
+            Ingredients = Cart.Select(c => new ListLineItem
+            {
+                Id = c.Id,
+                Name = c.Name,
+                UnitPrice = c.UnitPrice,
+                Qty = c.Qty
+            }).ToList()
+        };
+
+        Recipes.Add(newRecipe);
+    }
+    else
+    {
+        // Editing an existing, previously-saved recipe
+        EditingRecipe.Name = RecipeNameInput.Trim();
+        EditingRecipe.Date = RecipeDateInput;
+    }
+
+    CloseRecipeModal();
+}
+
+private void DuplicateRecipeToNewDay()
+{
+    if (EditingRecipe is null)
+        return;
+
+    if (string.IsNullOrWhiteSpace(RecipeNameInput))
+    {
+        RecipeErrorMessage = "Please give the recipe a name.";
+        return;
+    }
+
+    // Creates a brand-new, independent recipe entry with the same ingredients,
+    // using whatever name/date is currently in the form — the original is left untouched.
+    var copy = new Recipe
+    {
+        Name = RecipeNameInput.Trim(),
+        Date = RecipeDateInput,
+        Ingredients = EditingRecipe.Ingredients.Select(i => new ListLineItem
+        {
+            Id = i.Id,
+            Name = i.Name,
+            UnitPrice = i.UnitPrice,
+            Qty = i.Qty
+        }).ToList()
+    };
+
+    Recipes.Add(copy);
+    CloseRecipeModal();
+}
+
+private void DeleteRecipe()
+{
+    if (EditingRecipe is not null)
+        Recipes.Remove(EditingRecipe);
+
+    CloseRecipeModal();
+}
+
+private void CloseRecipeModal()
+{
+    ShowRecipeModal = false;
+    EditingRecipe = null;
+    RecipeErrorMessage = "";
+}
+
+public class Recipe
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Name { get; set; } = "";
+    public DateTime? Date { get; set; }
+    public List<ListLineItem> Ingredients { get; set; } = new();
 }
 }
