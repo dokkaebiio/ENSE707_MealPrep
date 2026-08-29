@@ -110,7 +110,18 @@ namespace MealPrep.Tests
             var totalPriceText = cut.Find(".cart-summary-total").TextContent.Trim();
             Assert.Contains("$0.00", totalPriceText);
         }
+        // TC-011
+        [Fact]
+        public void SearchWithNoMatches_ShowsNoResultsMessage()
+        {
+            var cut = Render<Home>();
+            var searchBox = cut.Find(".search-box");
+            searchBox.Input("zzzznonexistentitem");
 
+
+            var noResultsMessage = cut.Find(".empty-msg");
+            Assert.Contains("No items found", noResultsMessage.TextContent);
+        }
         private class FakeItemsHandler : HttpMessageHandler
         {
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

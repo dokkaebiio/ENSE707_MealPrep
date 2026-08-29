@@ -26,22 +26,29 @@
             <input type="button" value="Search" class="search-button" />
         </div>
 
-        <div class="Search-results">
-            @foreach (var item in FilteredItems)
-            {
-                <div class="item-card">
-                    <div class="item-emoji">@item.Emoji</div>
-                    <div class="item-name">@item.Name</div>
-                    <div class="item-price">$@item.Price.ToString("F2") each</div>
-                    <div class="item-actions">
-                        <button class="qty-btn">−</button>
-                        <div class="qty-display">1</div>
-                        <button class="qty-btn">+</button>
-                        <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
-                    </div>
+<div class="Search-results">
+    @if (!FilteredItems.Any())
+    {
+        <div class="empty-msg">No items found matching your search.</div>
+    }
+    else
+    {
+        @foreach (var item in FilteredItems)
+        {
+            <div class="item-card">
+                <div class="item-emoji">@item.Emoji</div>
+                <div class="item-name">@item.Name</div>
+                <div class="item-price">$@item.Price.ToString("F2") each</div>
+                <div class="item-actions">
+                    <button class="qty-btn">−</button>
+                    <div class="qty-display">1</div>
+                    <button class="qty-btn">+</button>
+                    <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
                 </div>
-            }
-        </div>
+            </div>
+        }
+    }
+</div>
     </div>
 
 <aside class="sidebar">

@@ -105,7 +105,20 @@ namespace MealPrep.Tests
             var cartItems = cut.FindAll(".cart-item-row");
             Assert.Single(cartItems);
         }
-
+        // TC-009
+        [Fact]
+        public async Task AddItemExceedingBudget_Cancel()
+        {
+            // Arrange
+            var cut = Render<Home>();
+            cut.Find("#budget").Input("0.02");
+            cut.Find(".set-budget-btn").Click();
+            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
+            var button = cut.FindAll(".modal-actions button");
+            await cut.InvokeAsync(() => button[1].Click()); // Click "Cancel"
+            var cartItems = cut.FindAll(".cart-item-row");
+            Assert.Empty(cartItems);
+        }
         private class FakeItemsHandler : HttpMessageHandler
         {
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
