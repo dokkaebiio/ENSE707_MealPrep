@@ -56,22 +56,3 @@ GroceryBudgetWeb/
     ├── css/app.css           # All styling — edit this to restyle the app
     └── data/items.json       # Preset ~50-item dataset (id, name, category, price, emoji)
 ```
-
-## Requirement coverage
-
-| Requirement | Covered by |
-|---|---|
-| FR1 — browse/search preset dataset | Search box + category dropdown in `Home.razor` |
-| FR2 — add item with quantity | Per-card +/- counter and Add button |
-| FR3 — auto-populate price | Price pulled from `data/items.json` on add |
-| FR4 — remove item | "✕" button per list row |
-| FR5 — change quantity | Editable quantity field per list row |
-| FR6 — live running total | Recalculated automatically on every state change |
-| FR7 — set/edit budget | Budget input at top |
-| FR8 — over/under/at-budget indicator | Colour-coded status banner |
-| FR9 — clear list | "Clear list" button |
-| NFR5 — dataset separate from code | `wwwroot/data/items.json` |
-
-## A note on styling
-
-All visual styling lives in one file: `wwwroot/css/app.css`. Colours are defined as CSS variables at the top (`--accent`, `--success-bg`, etc.) — change those to re-theme the whole app without touching individual element styles.
