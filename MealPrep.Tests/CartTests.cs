@@ -20,6 +20,7 @@ namespace MealPrep.Tests
             Services.AddSingleton<HttpClient>(client);
         }
 
+        // TC-001
         [Fact]
         public void ClickingAddButton_AddsItemToCartUi() 
         {
@@ -49,6 +50,7 @@ namespace MealPrep.Tests
             Assert.NotNull(remove);
         }
 
+        // TC-002
         [Fact]
         public async Task AddSameItemTwice_IncrementsQtyInCartUi()
         {
@@ -67,6 +69,7 @@ namespace MealPrep.Tests
             Assert.Contains("Qty: 2", qty);
         }
 
+        // TC-003
         [Fact]
         public async Task AddDifferentItems_AddsBothItemsToCartUi()
         {
@@ -82,23 +85,30 @@ namespace MealPrep.Tests
             // Assert - cart shows two rows
             var cartItems = cut.FindAll(".cart-item-row");
             Assert.Equal(2, cartItems.Count);
+            //Assert - total price is correct
+            var totalPriceText = cut.Find(".cart-summary-total").TextContent.Trim();
+            Assert.Contains("$0.80", totalPriceText); // 0.5 + 0.3 = 0.8
         }
 
+        // TC-004
         [Fact]
-        public void RemoveItemFromCart_RemovesItemUi()
+        public async Task RemoveItemFromCart_RemovesItemUi()
         {
             // Arrange
             var cut = Render<Home>();
             // Act - click the Add button for the single item
-            cut.Find("button.add-btn").Click();
+            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
             // Assert - cart shows one row
             var cartItems = cut.FindAll(".cart-item-row");
             Assert.Single(cartItems);
             // Act - click the Remove button
-            cut.Find(".remove-btn").Click();
+            await cut.InvokeAsync(() => cut.Find(".remove-btn").Click());
             // Assert - cart shows no rows
             cartItems = cut.FindAll(".cart-item-row");
             Assert.Empty(cartItems);
+            // Assert - total price is $0.00
+            var totalPriceText = cut.Find(".cart-summary-total").TextContent.Trim();
+            Assert.Contains("$0.00", totalPriceText);
         }
 
         private class FakeItemsHandler : HttpMessageHandler

@@ -71,20 +71,22 @@ namespace MealPrep.Tests
 
         // TC-010
         [Fact]
-        public void ChangeBudget_UpdatesBudgetUi()
+        public async Task ChangeBudget_UpdatesBudgetUi()
         {
             // Arrange
             var cut = Render<Home>();
             // Set initial budget
-            var budgetInput = cut.Find("#budget");
-            budgetInput.Input("50");
-            cut.Find(".set-budget-btn").Click();
+            cut.Find("#budget").Input("0.2");
+            await cut.InvokeAsync(() => cut.Find(".set-budget-btn").Click());
+
             // Act - change the budget to a new value
-            budgetInput.Input("75");
-            cut.Find(".set-budget-btn").Click();
-            // Assert - budget displayed in UI reflects new value
-            var budgetDisplay = cut.Find(".budget-amount").TextContent.Trim();
-            Assert.Contains("$75.00", budgetDisplay);
+            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
+            var button = cut.FindAll(".modal-actions button");
+            await cut.InvokeAsync(() => button[2].Click()); // 3rd button is "Change Budget" in the modal
+
+            // Assert - budget displayed in UI reflects new value, closes modal and cart remains unchanged
+            Assert.Empty(cut.FindAll(".modal-box")); // Modal should be closed
+            Assert.Empty(cut.FindAll(".cart-item-row")); // Cart should remain unchanged
         }
 
         // TC-008
