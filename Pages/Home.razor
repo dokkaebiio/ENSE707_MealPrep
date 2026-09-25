@@ -1,13 +1,24 @@
 @page "/"
 @inject HttpClient Http
+@using MealPrep.Services
+@inject AuthService Auth
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
 <div class="top-nav">
     <span class="nav-badge">MealPlan</span>
     <nav class="nav-links">
-        <!-- buttons/links go here -->
-    </nav>
+    @if (Auth.CurrentUser is not null)
+    {
+        <span>Hi, @Auth.CurrentUser.Name</span>
+        <button @onclick="HandleLogout">Logout</button>
+    }
+    else
+    {
+        <NavLink href="/login">Login</NavLink>
+        <NavLink href="/signup">Sign Up</NavLink>
+    }
+</nav>
 </div>
 
 <div class="page-layout">
@@ -430,5 +441,9 @@ public class Recipe
     public string Name { get; set; } = "";
     public DateTime? Date { get; set; }
     public List<ListLineItem> Ingredients { get; set; } = new();
+}
+private async Task HandleLogout()
+{
+    await Auth.LogoutAsync();
 }
 }

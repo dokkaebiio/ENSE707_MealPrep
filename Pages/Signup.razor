@@ -1,0 +1,61 @@
+@page "/signup"
+@using MealPrep.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<div class="app-container">
+    <h1>Sign Up</h1>
+
+    <div class="auth-form">
+        <label>Name</label>
+        <input @bind="Name" />
+
+        <label>Email</label>
+        <input @bind="Email" />
+
+        <label>Password</label>
+        <input type="password" @bind="Password" />
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="recipe-error">@ErrorMessage</div>
+        }
+
+        <button @onclick="HandleSignup">Create Account</button>
+    </div>
+
+    <div class="auth-switch-link">
+        Already have an account? <a href="/login">Log in</a>
+    </div>
+
+    <div class="auth-switch-link">
+        <a href="/">Keep Browsing</a>
+    </div>
+</div>
+
+@code {
+    private string Name = "";
+    private string Email = "";
+    private string Password = "";
+    private string ErrorMessage = "";
+
+    private async Task HandleSignup()
+    {
+        if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+        {
+            ErrorMessage = "Please fill in all fields.";
+            return;
+        }
+
+        var error = new ErrorBox();
+        if (await Auth.SignUpAsync(Name, Email, Password, error))
+        {
+            await Auth.LoginAsync(Email, Password, new ErrorBox());
+            Nav.NavigateTo("/");
+        }
+        else
+        {
+            ErrorMessage = error.Message;
+        }
+    }
+}

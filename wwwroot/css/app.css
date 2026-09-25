@@ -475,3 +475,63 @@ body {
     .recipe-modal-actions button.danger-btn:hover {
         opacity: 0.9;
     }
+/* --- Auth pages (Login / Signup) --- */
+
+.auth-form {
+    max-width: 360px;
+    margin: 24px auto 0;
+    background: white;
+    border: 1px solid #DDDDDD;
+    border-radius: 10px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.auth-form label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #444444;
+    margin-top: 12px;
+}
+
+.auth-form input {
+    padding: 8px 10px;
+    border: 1px solid #DDDDDD;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.auth-form button {
+    margin-top: 20px;
+    background: #2E5B8A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .auth-form button:hover {
+        opacity: 0.9;
+    }
+
+.auth-switch-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: #666666;
+}
+
+    .auth-switch-link a {
+        color: #2E5B8A;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .auth-switch-link a:hover {
+        text-decoration: underline;
+    }
