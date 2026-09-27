@@ -74,19 +74,32 @@
                 <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
             </div>
 
-            <div class="budget-summary budget-@BudgetStatusClass">
-                <div class="budget-amount">
-                    Budget: @(Budget.HasValue ? $"${Budget:F2}" : "Not set")
+                <div class="budget-summary budget-@BudgetStatusClass">
+                    <div class="budget-row">
+                        <div class="budget-info">
+                            <div class="budget-amount">
+                                Budget: @(Budget.HasValue ? $"${Budget:F2}" : "Not set")
+                            </div>
+                            <div class="budget-total">
+                                Spent: $@RunningTotal.ToString("F2")
+                                @if (Budget.HasValue)
+                                {
+                                    <span> (@BudgetPercent.ToString("F0")%)</span>
+                                }
+                            </div>
+                        </div>
+                        @if (Budget.HasValue)
+                        {
+                            <span class="status-badge status-@BudgetStatusClass">
+                                @BudgetStatusIcon @BudgetStatusText
+                            </span>
+                        }
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill budget-@BudgetStatusClass"
+                             style="width: @(Math.Min(BudgetPercent, 100).ToString("F0"))%"></div>
+                    </div>
                 </div>
-                <div class="budget-total">
-                    Spent: $@RunningTotal.ToString("F2")
-                    @if (Budget.HasValue)
-                    {
-                        <span> (@BudgetPercent.ToString("F0")%)</span>
-                    }
-                </div>
-                <div class="budget-status-label">@BudgetStatusText</div>
-            </div>
         </div>
 
         <hr class="sidebar-divider" />
@@ -252,15 +265,27 @@ private decimal BudgetPercent => Budget.HasValue && Budget > 0
 
 private string BudgetStatusClass =>
     Budget is null ? "none" :
+    BudgetPercent > 100 ? "over" :
+    BudgetPercent >= 100 ? "reached" :
     BudgetPercent >= 90 ? "danger" :
     BudgetPercent >= 75 ? "warning" :
     "good";
 
 private string BudgetStatusText =>
     Budget is null ? "No budget set" :
+    BudgetPercent > 100 ? "Over budget!" :
+    BudgetPercent >= 100 ? "Budget reached!" :
     BudgetPercent >= 90 ? "Almost at budget!" :
     BudgetPercent >= 75 ? "Getting close" :
     "Looking good";
+
+private string BudgetStatusIcon =>
+    Budget is null ? "" :
+    BudgetPercent > 100 ? "✕" :
+    BudgetPercent >= 100 ? "!" :
+    BudgetPercent >= 90 ? "⚠" :
+    BudgetPercent >= 75 ? "⚠" :
+    "✓";
 
 // --- Add-to-cart with over-budget prompt ---
 

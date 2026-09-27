@@ -262,21 +262,66 @@ body {
     width: 100%;
     z-index: 1000;
 }
-
-.budget-summary.budget-none {
-    border-left: 4px solid #3b82f6;
+.budget-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
 }
 
-.budget-summary.budget-good {
-    border-left: 4px solid #22c55e;
+.budget-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.budget-summary.budget-warning {
-    border-left: 4px solid #eab308;
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
-.budget-summary.budget-danger {
-    border-left: 4px solid #ef4444;
+    .status-badge.status-none {
+        background: #DBEAFE;
+        color: #1D4ED8;
+    }
+
+    .status-badge.status-good {
+        background: #DCFCE7;
+        color: #15803D;
+    }
+
+    .status-badge.status-warning {
+        background: #FEF9C3;
+        color: #A16207;
+    }
+
+    .status-badge.status-danger {
+        background: #FEE2E2;
+        color: #B91C1C;
+    }
+
+    .status-badge.status-reached {
+        background: #FEE2E2;
+        color: #B91C1C;
+    }
+
+    .status-badge.status-over {
+        background: #B91C1C;
+        color: white;
+    }
+
+.progress-fill.budget-reached {
+    background: #ef4444;
+}
+
+.progress-fill.budget-over {
+    background: #7f1d1d;
 }
 
 .modal-overlay {
@@ -330,6 +375,44 @@ body {
 
     .set-budget-btn:hover {
         opacity: 0.9;
+    }
+
+.budget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+
+.progress-track {
+    width: 100%;
+    height: 10px;
+    background: #E5E7EB;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+    .progress-fill.budget-none {
+        background: #3b82f6;
+    }
+
+    .progress-fill.budget-good {
+        background: #22c55e;
+    }
+
+    .progress-fill.budget-warning {
+        background: #eab308;
+    }
+
+    .progress-fill.budget-danger {
+        background: #ef4444;
     }
 
 .modal-actions button {
