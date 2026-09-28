@@ -1,98 +1,106 @@
 @page "/"
-@inject HttpClient Http
 @using MealPrep.Services
+@inject HttpClient Http
 @inject AuthService Auth
+@inject SpendingHistoryService SpendingHistory
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
 <div class="top-nav">
     <span class="nav-badge">MealPlan</span>
     <nav class="nav-links">
-    @if (Auth.CurrentUser is not null)
-    {
-        <span>Hi, @Auth.CurrentUser.Name</span>
-        <button @onclick="HandleLogout">Logout</button>
-    }
-    else
-    {
-        <NavLink href="/login">Login</NavLink>
-        <NavLink href="/signup">Sign Up</NavLink>
-    }
-</nav>
+        @if (Auth.CurrentUser is not null)
+        {
+            <span>Hi, @Auth.CurrentUser.Name</span>
+            <button @onclick="HandleLogout">Logout</button>
+        }
+        else
+        {
+            <NavLink href="/login">Login</NavLink>
+            <NavLink href="/signup">Sign Up</NavLink>
+        }
+    </nav>
 </div>
 
 <div class="page-layout">
 
     <div class="main-content">
         <div class="search-row">
-            <input type="text" placeholder="Search items..." class="search-box" @bind="SearchText" 
-            @bind:event="oninput" />
-<select class="category-select" @bind="SelectedCategory">
-    <option value="All">All</option>
-    @foreach (var cat in AllItems.Select(i => i.Category).Distinct().OrderBy(c => c))
-    {
-        <option value="@cat">@cat</option>
-    }
-</select>   
+            <input type="text" placeholder="Search items..." class="search-box"
+                   @bind="SearchText" @bind:event="oninput" />
+            <select class="category-select" @bind="SelectedCategory">
+                <option value="All">All</option>
+                @foreach (var cat in AllItems.Select(i => i.Category).Distinct().OrderBy(c => c))
+                {
+                    <option value="@cat">@cat</option>
+                }
+            </select>
             <input type="button" value="Search" class="search-button" />
         </div>
 
-<div class="Search-results">
-    @if (!FilteredItems.Any())
-    {
-        <div class="empty-msg">No items found matching your search.</div>
-    }
-    else
-    {
-        @foreach (var item in FilteredItems)
-        {
-            <div class="item-card">
-                <div class="item-emoji">@item.Emoji</div>
-                <div class="item-name">@item.Name</div>
-                <div class="item-price">$@item.Price.ToString("F2") each</div>
-                <div class="item-actions">
-                    <button class="qty-btn">−</button>
-                    <div class="qty-display">1</div>
-                    <button class="qty-btn">+</button>
-                    <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
-                </div>
-            </div>
-        }
-    }
-</div>
+        <div class="Search-results">
+            @if (!FilteredItems.Any())
+            {
+                <div class="empty-msg">No items found matching your search.</div>
+            }
+            else
+            {
+                @foreach (var item in FilteredItems)
+                {
+                    <div class="item-card">
+                        <div class="item-emoji">@item.Emoji</div>
+                        <div class="item-name">@item.Name</div>
+                        <div class="item-price">$@item.Price.ToString("F2") each</div>
+                        <div class="item-actions">
+                            <button class="qty-btn">−</button>
+                            <div class="qty-display">1</div>
+                            <button class="qty-btn">+</button>
+                            <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
     </div>
 
-<aside class="sidebar">
-    <div class="sidebar-card">
+    <aside class="sidebar">
+        <div class="sidebar-card">
 
-        <div class="budget-planner-section">
-            <h2>Budget Planner</h2>
-            <div class="budget-inputs">
-                <label for="budget">Set your budget:</label>
-                <input type="number" id="budget" placeholder="$0.00"
-                       @bind="BudgetInput" @bind:event="oninput" />
-                <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
-            </div>
+            <!-- Budget planner -->
+            <div class="budget-planner-section">
+                <h2>Budget Planner</h2>
 
-                <div class="budget-summary budget-@BudgetStatusClass">
-                    <div class="budget-row">
-                        <div class="budget-info">
-                            <div class="budget-amount">
-                                Budget: @(Budget.HasValue ? $"${Budget:F2}" : "Not set")
-                            </div>
-                            <div class="budget-total">
-                                Spent: $@RunningTotal.ToString("F2")
-                                @if (Budget.HasValue)
-                                {
-                                    <span> (@BudgetPercent.ToString("F0")%)</span>
-                                }
-                            </div>
-                        </div>
+                <div class="budget-inputs">
+                    <label for="budget">Set your budget:</label>
+                    <input type="number" id="budget" placeholder="$0.00"
+                           @bind="BudgetInput" @bind:event="oninput" />
+                    <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
+                </div>
+
+                @if (Auth.CurrentUser is not null && SuggestedBudget.HasValue)
+                {
+                    <div class="suggested-budget">
+                        <span class="suggested-text">
+                            Suggested from recent spending: <strong>$@SuggestedBudget.Value.ToString("F2")</strong>
+                        </span>
+                        <button class="use-suggestion-btn" @onclick="UseSuggestedBudget">Use Suggested</button>
+                    </div>
+                }
+
+                <div class="budget-summary">
+                    <div class="budget-line">
+                        <span class="budget-amount">
+                            Budget: @(Budget.HasValue ? $"${Budget:F2}" : "Not set")
+                        </span>
+                        <span class="status-badge status-@BudgetStatusClass budget-status-label">
+                            @BudgetStatusIcon @BudgetStatusText
+                        </span>
+                    </div>
+                    <div class="budget-total">
+                        Spent: $@RunningTotal.ToString("F2")
                         @if (Budget.HasValue)
                         {
-                            <span class="status-badge status-@BudgetStatusClass">
-                                @BudgetStatusIcon @BudgetStatusText
-                            </span>
+                            <span> (@BudgetPercent.ToString("F0")%)</span>
                         }
                     </div>
                     <div class="progress-track">
@@ -100,67 +108,75 @@
                              style="width: @(Math.Min(BudgetPercent, 100).ToString("F0"))%"></div>
                     </div>
                 </div>
-        </div>
+            </div>
 
-        <hr class="sidebar-divider" />
+            <hr class="sidebar-divider" />
 
-<div class="cart-summary-section">
-            <h2>Cart</h2>
+            <!-- Cart -->
+            <div class="cart-summary-section">
+                <h2>Cart</h2>
 
-            <div class="cart-items">
-                @foreach (var line in Cart)
-                {
-                    <div class="cart-item-row">
-                        <div class="cart-item-info">
-                            <div class="item-name">@line.Name</div>
-                            <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
+                <div class="cart-items">
+                    @foreach (var line in Cart)
+                    {
+                        <div class="cart-item-row">
+                            <div class="cart-item-info">
+                                <div class="item-name">@line.Name</div>
+                                <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
+                            </div>
+                            <div class="cart-item-qty">Qty: @line.Qty</div>
+                            <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
                         </div>
-                        <div class="cart-item-qty">Qty: @line.Qty</div>
-                        <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
+                    }
+                </div>
+
+                <div class="cart-summary-total">
+                    Total: $@RunningTotal.ToString("F2")
+                </div>
+
+                <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
+                    Create Recipe from Cart
+                </button>
+                <button class="finish-shopping-btn"
+                        disabled="@(!Cart.Any() || Auth.CurrentUser is null)"
+                        @onclick="FinishShopping">
+                    Finish Shopping
+                </button>
+            </div>
+
+            <hr class="sidebar-divider" />
+
+            <!-- Saved recipes -->
+            <div class="recipes-section">
+                <h2>Saved Recipes</h2>
+
+                @if (!Recipes.Any())
+                {
+                    <div class="recipes-empty">No recipes saved yet.</div>
+                }
+                else
+                {
+                    <div class="recipe-list">
+                        @foreach (var recipe in Recipes.OrderBy(r => r.Date))
+                        {
+                            <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                                <div class="recipe-card-name">@recipe.Name</div>
+                                <div class="recipe-card-date">
+                                    @(recipe.Date.HasValue ? recipe.Date.Value.ToString("ddd, MMM d") : "No date set")
+                                </div>
+                                <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                            </div>
+                        }
                     </div>
                 }
             </div>
 
-            <div class="cart-summary-total">
-                Total: $@RunningTotal.ToString("F2")
-            </div>
-
-            <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
-                Create Recipe from Cart
-            </button>
         </div>
-
-        <hr class="sidebar-divider" />
-
-        <div class="recipes-section">
-            <h2>Saved Recipes</h2>
-
-            @if (!Recipes.Any())
-            {
-                <div class="recipes-empty">No recipes saved yet.</div>
-            }
-            else
-            {
-                <div class="recipe-list">
-                    @foreach (var recipe in Recipes.OrderBy(r => r.Date))
-                    {
-                        <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
-                            <div class="recipe-card-name">@recipe.Name</div>
-                            <div class="recipe-card-date">
-                                @(recipe.Date.HasValue ? recipe.Date.Value.ToString("ddd, MMM d") : "No date set")
-                            </div>
-                            <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
-                        </div>
-                    }
-                </div>
-            }
-        </div>
-
-    </div>
-</aside>
+    </aside>
 
 </div>
 
+@* Over-budget confirmation modal *@
 @if (PendingItem is not null)
 {
     <div class="modal-overlay">
@@ -178,6 +194,7 @@
     </div>
 }
 
+@* Recipe create/edit modal *@
 @if (ShowRecipeModal)
 {
     <div class="modal-overlay">
@@ -227,248 +244,287 @@
 }
 
 @code {
-private List<GroceryItem> AllItems = new();
+    // ---------- Items / search ----------
 
-protected override async Task OnInitializedAsync()
-{
-    AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
-}
-private string SearchText = "";
-private string SelectedCategory = "All";
+    private List<GroceryItem> AllItems = new();
+    private string SearchText = "";
+    private string SelectedCategory = "All";
 
-private IEnumerable<GroceryItem> FilteredItems =>
-    AllItems.Where(i =>
-        (SelectedCategory == "All" || i.Category == SelectedCategory) &&
-        (string.IsNullOrWhiteSpace(SearchText) || i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+    private IEnumerable<GroceryItem> FilteredItems =>
+        AllItems.Where(i =>
+            (SelectedCategory == "All" || i.Category == SelectedCategory) &&
+            (string.IsNullOrWhiteSpace(SearchText) ||
+             i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
 
-// --- Cart ---
-
-private List<ListLineItem> Cart = new();
-private decimal RunningTotal => Cart.Sum(c => c.LineTotal);
-
-// --- Budget ---
-
-private decimal? Budget;
-private string BudgetInput = "";
-
-private void ApplyBudget()
-{
-    if (decimal.TryParse(BudgetInput, out var val) && val > 0)
-        Budget = val;
-    else
-        Budget = null; // empty/invalid input clears the budget — "no budget" is allowed
-}
-
-private decimal BudgetPercent => Budget.HasValue && Budget > 0
-    ? (RunningTotal / Budget.Value) * 100m
-    : 0;
-
-private string BudgetStatusClass =>
-    Budget is null ? "none" :
-    BudgetPercent > 100 ? "over" :
-    BudgetPercent >= 100 ? "reached" :
-    BudgetPercent >= 90 ? "danger" :
-    BudgetPercent >= 75 ? "warning" :
-    "good";
-
-private string BudgetStatusText =>
-    Budget is null ? "No budget set" :
-    BudgetPercent > 100 ? "Over budget!" :
-    BudgetPercent >= 100 ? "Budget reached!" :
-    BudgetPercent >= 90 ? "Almost at budget!" :
-    BudgetPercent >= 75 ? "Getting close" :
-    "Looking good";
-
-private string BudgetStatusIcon =>
-    Budget is null ? "" :
-    BudgetPercent > 100 ? "✕" :
-    BudgetPercent >= 100 ? "!" :
-    BudgetPercent >= 90 ? "⚠" :
-    BudgetPercent >= 75 ? "⚠" :
-    "✓";
-
-// --- Add-to-cart with over-budget prompt ---
-
-private GroceryItem? PendingItem;      // item awaiting confirmation
-private decimal PendingTotalIfAdded;   // what the total would become
-
-private void AddToCart(GroceryItem item)
-{
-    var wouldBeTotal = RunningTotal + item.Price;
-
-    if (Budget.HasValue && wouldBeTotal > Budget.Value)
+    protected override async Task OnInitializedAsync()
     {
-        // Don't add yet — ask first
-        PendingItem = item;
-        PendingTotalIfAdded = wouldBeTotal;
-        return;
+        AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
+        await LoadSpendingHistory();
     }
 
-    DoAdd(item);
-}
+    // ---------- Cart ----------
 
-private void DoAdd(GroceryItem item)
-{
-    var existing = Cart.FirstOrDefault(c => c.Id == item.Id);
-    if (existing is not null)
+    private List<ListLineItem> Cart = new();
+    private decimal RunningTotal => Cart.Sum(c => c.LineTotal);
+
+    private void DoAdd(GroceryItem item)
     {
-        existing.Qty++;
-    }
-    else
-    {
-        Cart.Add(new ListLineItem
+        var existing = Cart.FirstOrDefault(c => c.Id == item.Id);
+        if (existing is not null)
         {
-            Id = item.Id,
-            Name = item.Name,
-            UnitPrice = item.Price,
-            Qty = 1
-        });
-    }
-}
-
-private void ConfirmAddAnyway()
-{
-    if (PendingItem is not null)
-        DoAdd(PendingItem);
-    PendingItem = null;
-}
-
-private void CancelPendingAdd()
-{
-    PendingItem = null;
-}
-
-private void GoChangeBudget()
-{
-    PendingItem = null;
-}
-
-private void RemoveFromCart(ListLineItem line)
-{
-    Cart.Remove(line);
-}
-
-// --- Recipes ---
-
-private List<Recipe> Recipes = new();
-
-private bool ShowRecipeModal = false;
-private Recipe? EditingRecipe = null;   // null => creating a new recipe from the current cart
-private string RecipeNameInput = "";
-private DateTime? RecipeDateInput;
-private string RecipeErrorMessage = "";
-
-private void OpenCreateRecipeModal()
-{
-    if (!Cart.Any())
-        return;
-
-    EditingRecipe = null;
-    RecipeNameInput = "";
-    RecipeDateInput = DateTime.Today;
-    RecipeErrorMessage = "";
-    ShowRecipeModal = true;
-}
-
-private void OpenEditRecipeModal(Recipe recipe)
-{
-    EditingRecipe = recipe;
-    RecipeNameInput = recipe.Name;
-    RecipeDateInput = recipe.Date;
-    RecipeErrorMessage = "";
-    ShowRecipeModal = true;
-}
-
-private void SaveRecipe()
-{
-    if (string.IsNullOrWhiteSpace(RecipeNameInput))
-    {
-        RecipeErrorMessage = "Please give the recipe a name.";
-        return;
+            existing.Qty++;
+        }
+        else
+        {
+            Cart.Add(new ListLineItem
+            {
+                Id = item.Id,
+                Name = item.Name,
+                UnitPrice = item.Price,
+                Qty = 1
+            });
+        }
     }
 
-    if (EditingRecipe is null)
+    private void RemoveFromCart(ListLineItem line)
     {
-        // Creating a brand-new recipe from a snapshot of the current cart
-        var newRecipe = new Recipe
+        Cart.Remove(line);
+    }
+
+    // ---------- Budget ----------
+
+    private decimal? Budget;
+    private string BudgetInput = "";
+
+    private void ApplyBudget()
+    {
+        if (decimal.TryParse(BudgetInput, out var val) && val > 0)
+            Budget = val;
+        else
+            Budget = null; // empty/invalid input clears the budget — "no budget" is allowed
+    }
+
+    private decimal BudgetPercent => Budget.HasValue && Budget > 0
+        ? (RunningTotal / Budget.Value) * 100m
+        : 0;
+
+    private string BudgetStatusClass =>
+        Budget is null ? "none" :
+        BudgetPercent > 100 ? "over" :
+        BudgetPercent >= 100 ? "reached" :
+        BudgetPercent >= 90 ? "danger" :
+        BudgetPercent >= 75 ? "warning" :
+        "good";
+
+    private string BudgetStatusText =>
+        Budget is null ? "No budget set" :
+        BudgetPercent > 100 ? "Over budget!" :
+        BudgetPercent >= 100 ? "Budget reached!" :
+        BudgetPercent >= 90 ? "Almost at budget!" :
+        BudgetPercent >= 75 ? "Getting close" :
+        "Looking good";
+
+    private string BudgetStatusIcon =>
+        Budget is null ? "" :
+        BudgetPercent > 100 ? "X" :
+        BudgetPercent >= 100 ? "!" :
+        BudgetPercent >= 75 ? "!" :
+        "✓";
+
+    // ---------- Add-to-cart with over-budget prompt ----------
+
+    private GroceryItem? PendingItem;      // item awaiting confirmation
+    private decimal PendingTotalIfAdded;   // what the total would become
+
+    private void AddToCart(GroceryItem item)
+    {
+        var wouldBeTotal = RunningTotal + item.Price;
+
+        if (Budget.HasValue && wouldBeTotal > Budget.Value)
+        {
+            // Don't add yet — ask first
+            PendingItem = item;
+            PendingTotalIfAdded = wouldBeTotal;
+            return;
+        }
+
+        DoAdd(item);
+    }
+
+    private void ConfirmAddAnyway()
+    {
+        if (PendingItem is not null)
+            DoAdd(PendingItem);
+        PendingItem = null;
+    }
+
+    private void CancelPendingAdd()
+    {
+        PendingItem = null;
+    }
+
+    private void GoChangeBudget()
+    {
+        PendingItem = null; // closes the modal so the user can edit the budget field
+    }
+
+    // ---------- Spending history / suggested budget (FR3) ----------
+
+    private List<SpendingRecord> SpendingHistoryList = new();
+    private decimal? SuggestedBudget;
+
+    private async Task LoadSpendingHistory()
+    {
+        if (Auth.CurrentUser is null)
+            return;
+
+        SpendingHistoryList = await SpendingHistory.GetHistoryAsync(Auth.CurrentUser.Email);
+        SuggestedBudget = SpendingHistory.GetSuggestedBudget(SpendingHistoryList);
+    }
+
+    private void UseSuggestedBudget()
+    {
+        if (SuggestedBudget.HasValue)
+        {
+            Budget = SuggestedBudget.Value;
+            BudgetInput = SuggestedBudget.Value.ToString("F2");
+        }
+    }
+
+    private async Task FinishShopping()
+    {
+        if (!Cart.Any() || Auth.CurrentUser is null)
+            return;
+
+        await SpendingHistory.LogTripAsync(Auth.CurrentUser.Email, RunningTotal);
+        Cart.Clear();
+        await LoadSpendingHistory(); // refresh the suggestion with the new trip included
+    }
+
+    // ---------- Recipes ----------
+
+    private List<Recipe> Recipes = new();
+
+    private bool ShowRecipeModal = false;
+    private Recipe? EditingRecipe = null;   // null => creating a new recipe from the current cart
+    private string RecipeNameInput = "";
+    private DateTime? RecipeDateInput;
+    private string RecipeErrorMessage = "";
+
+    private void OpenCreateRecipeModal()
+    {
+        if (!Cart.Any())
+            return;
+
+        EditingRecipe = null;
+        RecipeNameInput = "";
+        RecipeDateInput = DateTime.Today;
+        RecipeErrorMessage = "";
+        ShowRecipeModal = true;
+    }
+
+    private void OpenEditRecipeModal(Recipe recipe)
+    {
+        EditingRecipe = recipe;
+        RecipeNameInput = recipe.Name;
+        RecipeDateInput = recipe.Date;
+        RecipeErrorMessage = "";
+        ShowRecipeModal = true;
+    }
+
+    private void SaveRecipe()
+    {
+        if (string.IsNullOrWhiteSpace(RecipeNameInput))
+        {
+            RecipeErrorMessage = "Please give the recipe a name.";
+            return;
+        }
+
+        if (EditingRecipe is null)
+        {
+            // Creating a brand-new recipe from a snapshot of the current cart
+            var newRecipe = new Recipe
+            {
+                Name = RecipeNameInput.Trim(),
+                Date = RecipeDateInput,
+                Ingredients = Cart.Select(c => new ListLineItem
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    UnitPrice = c.UnitPrice,
+                    Qty = c.Qty
+                }).ToList()
+            };
+
+            Recipes.Add(newRecipe);
+        }
+        else
+        {
+            // Editing an existing, previously-saved recipe
+            EditingRecipe.Name = RecipeNameInput.Trim();
+            EditingRecipe.Date = RecipeDateInput;
+        }
+
+        CloseRecipeModal();
+    }
+
+    private void DuplicateRecipeToNewDay()
+    {
+        if (EditingRecipe is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(RecipeNameInput))
+        {
+            RecipeErrorMessage = "Please give the recipe a name.";
+            return;
+        }
+
+        // Brand-new, independent recipe with the same ingredients, using the name/date
+        // currently in the form — the original is left untouched.
+        var copy = new Recipe
         {
             Name = RecipeNameInput.Trim(),
             Date = RecipeDateInput,
-            Ingredients = Cart.Select(c => new ListLineItem
+            Ingredients = EditingRecipe.Ingredients.Select(i => new ListLineItem
             {
-                Id = c.Id,
-                Name = c.Name,
-                UnitPrice = c.UnitPrice,
-                Qty = c.Qty
+                Id = i.Id,
+                Name = i.Name,
+                UnitPrice = i.UnitPrice,
+                Qty = i.Qty
             }).ToList()
         };
 
-        Recipes.Add(newRecipe);
-    }
-    else
-    {
-        // Editing an existing, previously-saved recipe
-        EditingRecipe.Name = RecipeNameInput.Trim();
-        EditingRecipe.Date = RecipeDateInput;
+        Recipes.Add(copy);
+        CloseRecipeModal();
     }
 
-    CloseRecipeModal();
-}
-
-private void DuplicateRecipeToNewDay()
-{
-    if (EditingRecipe is null)
-        return;
-
-    if (string.IsNullOrWhiteSpace(RecipeNameInput))
+    private void DeleteRecipe()
     {
-        RecipeErrorMessage = "Please give the recipe a name.";
-        return;
+        if (EditingRecipe is not null)
+            Recipes.Remove(EditingRecipe);
+
+        CloseRecipeModal();
     }
 
-    // Creates a brand-new, independent recipe entry with the same ingredients,
-    // using whatever name/date is currently in the form — the original is left untouched.
-    var copy = new Recipe
+    private void CloseRecipeModal()
     {
-        Name = RecipeNameInput.Trim(),
-        Date = RecipeDateInput,
-        Ingredients = EditingRecipe.Ingredients.Select(i => new ListLineItem
-        {
-            Id = i.Id,
-            Name = i.Name,
-            UnitPrice = i.UnitPrice,
-            Qty = i.Qty
-        }).ToList()
-    };
+        ShowRecipeModal = false;
+        EditingRecipe = null;
+        RecipeErrorMessage = "";
+    }
 
-    Recipes.Add(copy);
-    CloseRecipeModal();
-}
+    public class Recipe
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string Name { get; set; } = "";
+        public DateTime? Date { get; set; }
+        public List<ListLineItem> Ingredients { get; set; } = new();
+    }
 
-private void DeleteRecipe()
-{
-    if (EditingRecipe is not null)
-        Recipes.Remove(EditingRecipe);
+    // ---------- Auth ----------
 
-    CloseRecipeModal();
-}
-
-private void CloseRecipeModal()
-{
-    ShowRecipeModal = false;
-    EditingRecipe = null;
-    RecipeErrorMessage = "";
-}
-
-public class Recipe
-{
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "";
-    public DateTime? Date { get; set; }
-    public List<ListLineItem> Ingredients { get; set; } = new();
-}
-private async Task HandleLogout()
-{
-    await Auth.LogoutAsync();
-}
+    private async Task HandleLogout()
+    {
+        await Auth.LogoutAsync();
+    }
 }

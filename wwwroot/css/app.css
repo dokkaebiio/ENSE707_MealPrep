@@ -1,3 +1,7 @@
+/* =========================================================
+   Base
+   ========================================================= */
+
 * {
     box-sizing: border-box;
 }
@@ -10,8 +14,23 @@ body {
     width: 100%;
     margin: 0 auto;
     padding: 0 20px;
-    box-sizing: border-box;
 }
+
+#blazor-error-ui {
+    display: none;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+/* =========================================================
+   Top navigation
+   ========================================================= */
 
 .top-nav {
     width: 100%;
@@ -21,7 +40,6 @@ body {
     padding: 16px 30px;
 }
 
-/* Top Nav Stylings */
 .nav-badge {
     font-size: 1.1rem;
     font-weight: 700;
@@ -47,6 +65,10 @@ body {
         .nav-links a:hover {
             background: #EAF1F8;
         }
+
+/* =========================================================
+   Page layout
+   ========================================================= */
 
 .page-layout {
     display: flex;
@@ -80,15 +102,10 @@ body {
     margin: 18px 0;
 }
 
-.budget-planner,
-.cart-summary {
-    background: white;
-    border: 1px solid #DDDDDD;
-    border-radius: 10px;
-    padding: 18px;
-}
+/* =========================================================
+   Search + item cards
+   ========================================================= */
 
-/* Search box and input styles */
 .search-row {
     display: flex;
     gap: 10px;
@@ -100,8 +117,7 @@ body {
 
 .search-box {
     flex: 2;
-    padding: 8px 10px;
-    padding-top: 10px;
+    padding: 10px 10px 8px;
     border: 1px solid #DDDDDD;
     border-radius: 6px;
     font-size: 1rem;
@@ -125,7 +141,6 @@ body {
     border-radius: 999px;
 }
 
-/* Search result style */
 .Search-results {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -134,6 +149,13 @@ body {
     background: #F4F4F0;
     padding: 20px;
     border-radius: 10px;
+}
+
+.empty-msg {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #666666;
+    padding: 16px 0;
 }
 
 .item-card {
@@ -203,76 +225,88 @@ body {
         opacity: 0.9;
     }
 
-.cart-items {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 12px 0;
-}
+/* =========================================================
+   Budget planner
+   ========================================================= */
 
-.cart-item-row {
-    display: grid;
-    grid-template-columns: 36px 1fr 50px 28px;
+.budget-inputs {
+    display: flex;
     align-items: center;
     gap: 8px;
-    border: 1px solid #DDDDDD;
-    border-radius: 8px;
-    padding: 8px 10px;
-    background: #FAFAFA;
+    margin-bottom: 12px;
 }
 
-    .cart-item-row .item-emoji {
-        font-size: 1.6rem;
-        text-align: center;
-        margin-bottom: 0;
+    .budget-inputs label {
+        white-space: nowrap;
     }
 
-.cart-item-info .item-name {
-    font-size: 0.9rem;
-}
+    .budget-inputs input#budget {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
 
-.cart-item-info .item-price {
-    font-size: 0.75rem;
-    margin-bottom: 0;
-}
-
-.cart-item-qty {
-    font-size: 0.8rem;
-    color: #666666;
-    text-align: center;
-}
-
-.remove-btn {
-    background: none;
+.set-budget-btn {
+    background: #2E5B8A;
+    color: white;
     border: none;
-    color: #B02A2A;
-    font-size: 1rem;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
     cursor: pointer;
 }
 
-#blazor-error-ui {
-    display: none;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
-    position: fixed;
-    width: 100%;
-    z-index: 1000;
-}
-.budget-row {
+    .set-budget-btn:hover {
+        opacity: 0.9;
+    }
+
+/* Suggested budget (FR3) */
+
+.suggested-budget {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    background: #EAF1F8;
+    border-radius: 6px;
+    font-size: 0.85rem;
 }
 
-.budget-info {
+.use-suggestion-btn {
+    background: #2E5B8A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+    .use-suggestion-btn:hover {
+        opacity: 0.9;
+    }
+
+/* Budget summary: budget line + status badge, spent line, progress bar */
+
+.budget-line {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 2px;
+}
+
+.budget-total {
+    font-size: 0.9rem;
 }
 
 .status-badge {
@@ -301,11 +335,7 @@ body {
         color: #A16207;
     }
 
-    .status-badge.status-danger {
-        background: #FEE2E2;
-        color: #B91C1C;
-    }
-
+    .status-badge.status-danger,
     .status-badge.status-reached {
         background: #FEE2E2;
         color: #B91C1C;
@@ -315,74 +345,6 @@ body {
         background: #B91C1C;
         color: white;
     }
-
-.progress-fill.budget-reached {
-    background: #ef4444;
-}
-
-.progress-fill.budget-over {
-    background: #7f1d1d;
-}
-
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-}
-
-.modal-box {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    max-width: 320px;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-
-.budget-inputs {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-    .budget-inputs input#budget {
-        flex: 1;
-        padding: 8px 10px;
-        border: 1px solid #DDDDDD;
-        border-radius: 6px;
-        font-size: 1rem;
-    }
-
-.set-budget-btn {
-    background: #2E5B8A;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-    .set-budget-btn:hover {
-        opacity: 0.9;
-    }
-
-.budget-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 4px;
-}
 
 .progress-track {
     width: 100%;
@@ -411,30 +373,65 @@ body {
         background: #eab308;
     }
 
-    .progress-fill.budget-danger {
+    .progress-fill.budget-danger,
+    .progress-fill.budget-reached {
         background: #ef4444;
     }
 
-.modal-actions button {
-    background: #2E5B8A;
-    color: white;
-    border: none;
-    border-radius: 6px;
+    .progress-fill.budget-over {
+        background: #7f1d1d;
+    }
+
+/* =========================================================
+   Cart
+   ========================================================= */
+
+.cart-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+/* 3 columns: item info | qty | remove button */
+.cart-item-row {
+    display: grid;
+    grid-template-columns: 1fr 50px 28px;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
     padding: 8px 10px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    background: #FAFAFA;
+}
+
+.cart-item-info .item-name {
+    font-size: 0.9rem;
+}
+
+.cart-item-info .item-price {
+    font-size: 0.75rem;
+    margin-bottom: 0;
+}
+
+.cart-item-qty {
+    font-size: 0.8rem;
+    color: #666666;
+    text-align: center;
+}
+
+.remove-btn {
+    background: none;
+    border: none;
+    color: #B02A2A;
+    font-size: 1rem;
     cursor: pointer;
 }
 
-    .modal-actions button:hover {
-        opacity: 0.9;
-    }
-
-/* --- Create Recipe button --- */
-
-.create-recipe-btn {
+.create-recipe-btn,
+.finish-shopping-btn {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 8px;
     background: #2E5B8A;
     color: white;
     border: none;
@@ -445,16 +442,69 @@ body {
     cursor: pointer;
 }
 
-    .create-recipe-btn:hover:not(:disabled) {
+.create-recipe-btn {
+    margin-top: 12px;
+}
+
+    .create-recipe-btn:hover:not(:disabled),
+    .finish-shopping-btn:hover:not(:disabled) {
         opacity: 0.9;
     }
 
-    .create-recipe-btn:disabled {
+    .create-recipe-btn:disabled,
+    .finish-shopping-btn:disabled {
         background: #CCCCCC;
         cursor: not-allowed;
     }
 
-/* --- Saved recipes list --- */
+/* =========================================================
+   Modals (over-budget prompt + recipe)
+   ========================================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    max-width: 320px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+    .modal-actions button {
+        background: #2E5B8A;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .modal-actions button:hover {
+            opacity: 0.9;
+        }
+
+/* =========================================================
+   Recipes
+   ========================================================= */
 
 .recipes-empty {
     font-size: 0.85rem;
@@ -498,8 +548,6 @@ body {
     margin-top: 2px;
 }
 
-/* --- Recipe modal --- */
-
 .recipe-modal-box {
     max-width: 380px;
     width: 100%;
@@ -512,7 +560,8 @@ body {
     margin-bottom: 12px;
 }
 
-    .recipe-form-field label {
+    .recipe-form-field label,
+    .recipe-ingredients-preview label {
         font-size: 0.85rem;
         font-weight: 600;
         color: #444444;
@@ -529,21 +578,15 @@ body {
     margin-bottom: 12px;
 }
 
-    .recipe-ingredients-preview label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #444444;
-    }
-
-    .recipe-ingredients-preview ul {
-        list-style: disc;
-        margin: 6px 0 0 20px;
-        padding: 0;
-        max-height: 140px;
-        overflow-y: auto;
-        font-size: 0.85rem;
-        color: #333333;
-    }
+.recipe-ingredients-preview ul {
+    list-style: disc;
+    margin: 6px 0 0 20px;
+    padding: 0;
+    max-height: 140px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    color: #333333;
+}
 
 .recipe-error {
     color: #B02A2A;
@@ -555,10 +598,9 @@ body {
     background: #B02A2A;
 }
 
-    .recipe-modal-actions button.danger-btn:hover {
-        opacity: 0.9;
-    }
-/* --- Auth pages (Login / Signup) --- */
+/* =========================================================
+   Auth pages (Login / Signup)
+   ========================================================= */
 
 .auth-form {
     max-width: 360px;
@@ -572,35 +614,35 @@ body {
     gap: 4px;
 }
 
-.auth-form label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #444444;
-    margin-top: 12px;
-}
-
-.auth-form input {
-    padding: 8px 10px;
-    border: 1px solid #DDDDDD;
-    border-radius: 6px;
-    font-size: 1rem;
-}
-
-.auth-form button {
-    margin-top: 20px;
-    background: #2E5B8A;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-    .auth-form button:hover {
-        opacity: 0.9;
+    .auth-form label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #444444;
+        margin-top: 12px;
     }
+
+    .auth-form input {
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
+    .auth-form button {
+        margin-top: 20px;
+        background: #2E5B8A;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .auth-form button:hover {
+            opacity: 0.9;
+        }
 
 .auth-switch-link {
     text-align: center;
@@ -615,6 +657,6 @@ body {
         text-decoration: none;
     }
 
-    .auth-switch-link a:hover {
-        text-decoration: underline;
-    }
+        .auth-switch-link a:hover {
+            text-decoration: underline;
+        }

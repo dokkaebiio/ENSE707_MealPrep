@@ -15,6 +15,7 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<SpendingHistoryService>();
 
 var host = builder.Build();
 

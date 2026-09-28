@@ -7,6 +7,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Blazored.LocalStorage;
+using MealPrep.Services;
 
 
 namespace MealPrep.Tests
@@ -19,6 +21,10 @@ namespace MealPrep.Tests
             var handler = new FakeItemsHandler();
             var client = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
             Services.AddSingleton<HttpClient>(client);
+            JSInterop.Mode = JSRuntimeMode.Loose;   // lets localStorage calls succeed without a real browser
+            Services.AddBlazoredLocalStorage();
+            Services.AddScoped<AuthService>();
+            Services.AddScoped<SpendingHistoryService>();
         }
 
         // TC-005
