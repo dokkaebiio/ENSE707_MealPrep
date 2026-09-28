@@ -231,9 +231,10 @@ body {
 
 .budget-inputs {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 20px;
 }
 
     .budget-inputs label {
@@ -241,7 +242,7 @@ body {
     }
 
     .budget-inputs input#budget {
-        flex: 1;
+        flex: 1 1 90px;
         min-width: 0;
         padding: 8px 10px;
         border: 1px solid #DDDDDD;
@@ -249,71 +250,79 @@ body {
         font-size: 1rem;
     }
 
-.set-budget-btn {
-    background: #2E5B8A;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-    .set-budget-btn:hover {
-        opacity: 0.9;
-    }
-
-/* Suggested budget (FR3) */
-
-.suggested-budget {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-    padding: 8px 10px;
-    background: #EAF1F8;
-    border-radius: 6px;
-    font-size: 0.85rem;
-}
-
+.set-budget-btn,
 .use-suggestion-btn {
     background: #2E5B8A;
     color: white;
     border: none;
     border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 0.8rem;
+    padding: 8px 14px;
+    min-width: 110px;
+    font-size: 0.9rem;
     font-weight: 600;
+    text-align: center;
     white-space: nowrap;
     cursor: pointer;
 }
 
+    .set-budget-btn:hover,
     .use-suggestion-btn:hover {
         opacity: 0.9;
     }
 
-/* Budget summary: budget line + status badge, spent line, progress bar */
+/* Suggested budget (FR3) - a card nested inside the planner.
+   Negative side margins let the card's border sit in the parent's padding,
+   so its content lines up with the input row and status row. */
+
+.suggested-card {
+    margin: 0 -13px 20px;
+    padding: 12px;
+    background: #F8FAFC;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+}
+
+.suggested-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2E5B8A;
+}
+
+.suggested-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0;
+}
+
+.suggested-amount {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.suggested-basis {
+    font-size: 0.75rem;
+    color: #777777;
+}
+
+/* Budget summary: budget line + status badge, progress bar */
 
 .budget-line {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin-bottom: 2px;
-}
-
-.budget-total {
-    font-size: 0.9rem;
+    margin-bottom: 8px;
 }
 
 .status-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    padding: 4px 10px;
+    min-width: 110px;
+    padding: 6px 12px;
     border-radius: 999px;
     font-size: 0.8rem;
     font-weight: 600;
@@ -352,7 +361,7 @@ body {
     background: #E5E7EB;
     border-radius: 999px;
     overflow: hidden;
-    margin-top: 8px;
+    margin-top: 10px;
 }
 
 .progress-fill {
@@ -442,7 +451,7 @@ body {
     cursor: pointer;
 }
 
-.create-recipe-btn {
+.finish-shopping-btn {
     margin-top: 12px;
 }
 
@@ -578,15 +587,15 @@ body {
     margin-bottom: 12px;
 }
 
-.recipe-ingredients-preview ul {
-    list-style: disc;
-    margin: 6px 0 0 20px;
-    padding: 0;
-    max-height: 140px;
-    overflow-y: auto;
-    font-size: 0.85rem;
-    color: #333333;
-}
+    .recipe-ingredients-preview ul {
+        list-style: disc;
+        margin: 6px 0 0 20px;
+        padding: 0;
+        max-height: 140px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+        color: #333333;
+    }
 
 .recipe-error {
     color: #B02A2A;

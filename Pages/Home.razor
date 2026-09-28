@@ -79,34 +79,37 @@
 
                 @if (Auth.CurrentUser is not null && SuggestedBudget.HasValue)
                 {
-                    <div class="suggested-budget">
-                        <span class="suggested-text">
-                            Suggested from recent spending: <strong>$@SuggestedBudget.Value.ToString("F2")</strong>
-                        </span>
-                        <button class="use-suggestion-btn" @onclick="UseSuggestedBudget">Use Suggested</button>
+                    <div class="suggested-card">
+                        <div class="suggested-label">Suggested budget</div>
+                        <div class="suggested-row">
+                            <span class="suggested-amount">$@SuggestedBudget.Value.ToString("F2")</span>
+                            <button class="use-suggestion-btn" @onclick="UseSuggestedBudget">Use Budget</button>
+                        </div>
+                        <div class="suggested-basis">
+                            Based on your last @TripsUsed shopping @(TripsUsed == 1 ? "trip" : "trips")
+                        </div>
                     </div>
                 }
 
                 <div class="budget-summary">
                     <div class="budget-line">
                         <span class="budget-amount">
-                            Budget: @(Budget.HasValue ? $"${Budget:F2}" : "Not set")
+                            Budget: @(Budget.HasValue ? $"${Budget:F2}" : "—")
                         </span>
                         <span class="status-badge status-@BudgetStatusClass budget-status-label">
                             @BudgetStatusIcon @BudgetStatusText
                         </span>
                     </div>
-                    <div class="budget-total">
-                        Spent: $@RunningTotal.ToString("F2")
-                        @if (Budget.HasValue)
-                        {
-                            <span> (@BudgetPercent.ToString("F0")%)</span>
-                        }
-                    </div>
-                    <div class="progress-track">
-                        <div class="progress-fill budget-@BudgetStatusClass"
-                             style="width: @(Math.Min(BudgetPercent, 100).ToString("F0"))%"></div>
-                    </div>
+                    @if (Budget.HasValue)
+                    {
+                        <div class="progress-track" role="progressbar"
+                             aria-valuemin="0" aria-valuemax="100"
+                             aria-valuenow="@ProgressWidth"
+                             aria-label="@ProgressSummary" title="@ProgressSummary">
+                            <div class="progress-fill budget-@BudgetStatusClass"
+                                 style="width: @(ProgressWidth)%"></div>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -134,13 +137,13 @@
                     Total: $@RunningTotal.ToString("F2")
                 </div>
 
-                <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
-                    Create Recipe from Cart
-                </button>
                 <button class="finish-shopping-btn"
                         disabled="@(!Cart.Any() || Auth.CurrentUser is null)"
                         @onclick="FinishShopping">
                     Finish Shopping
+                </button>
+                <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
+                    Create Recipe from Cart
                 </button>
             </div>
 
@@ -308,6 +311,14 @@
         ? (RunningTotal / Budget.Value) * 100m
         : 0;
 
+    // The bar is driven by the cart total (RunningTotal) vs the budget, capped at 100% width.
+    private string ProgressWidth => Math.Min(BudgetPercent, 100).ToString("F0");
+
+    private string ProgressSummary =>
+        Budget.HasValue
+            ? $"${RunningTotal:F2} of ${Budget.Value:F2} ({BudgetPercent:F0}%)"
+            : "";
+
     private string BudgetStatusClass =>
         Budget is null ? "none" :
         BudgetPercent > 100 ? "over" :
@@ -326,9 +337,9 @@
 
     private string BudgetStatusIcon =>
         Budget is null ? "" :
-        BudgetPercent > 100 ? "X" :
+        BudgetPercent > 100 ? "✕" :
         BudgetPercent >= 100 ? "!" :
-        BudgetPercent >= 75 ? "!" :
+        BudgetPercent >= 75 ? "⚠" :
         "✓";
 
     // ---------- Add-to-cart with over-budget prompt ----------
@@ -370,8 +381,11 @@
 
     // ---------- Spending history / suggested budget (FR3) ----------
 
+    private const int SuggestionTripCount = 5;   // how many recent trips feed the suggestion
+
     private List<SpendingRecord> SpendingHistoryList = new();
     private decimal? SuggestedBudget;
+    private int TripsUsed => Math.Min(SpendingHistoryList.Count, SuggestionTripCount);
 
     private async Task LoadSpendingHistory()
     {
@@ -379,7 +393,7 @@
             return;
 
         SpendingHistoryList = await SpendingHistory.GetHistoryAsync(Auth.CurrentUser.Email);
-        SuggestedBudget = SpendingHistory.GetSuggestedBudget(SpendingHistoryList);
+        SuggestedBudget = SpendingHistory.GetSuggestedBudget(SpendingHistoryList, SuggestionTripCount);
     }
 
     private void UseSuggestedBudget()
