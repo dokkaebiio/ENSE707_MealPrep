@@ -131,7 +131,7 @@ namespace MealPrep.Tests
             {
                 if (request.RequestUri?.AbsolutePath?.EndsWith("/data/items.json") == true || request.RequestUri?.AbsolutePath?.EndsWith("items.json") == true)
                 {
-                    var json = "[{\"Id\":1,\"Name\":\"Apple\",\"Category\":\"Fruit\",\"Price\":0.5,\"Emoji\":\"🍎\"}]";
+                    var json = "[{\"Id\":1,\"Name\":\"Apple\",\"Category\":\"Fruit\",\"Prices\":[{\"Supermarket\":\"Generic\",\"Price\":0.5}],\"Emoji\":\"🍎\"}]";
                     var response = new HttpResponseMessage(HttpStatusCode.OK)
                     {
                         Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")

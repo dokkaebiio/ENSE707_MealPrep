@@ -1,352 +1,52 @@
 [
-  {
-    "id": 1,
-    "name": "Bananas (1kg)",
-    "category": "Produce",
-    "price": 3.2,
-    "emoji": "🍌"
-  },
-  {
-    "id": 2,
-    "name": "Apples (1kg)",
-    "category": "Produce",
-    "price": 4.5,
-    "emoji": "🍎"
-  },
-  {
-    "id": 3,
-    "name": "Carrots (1kg)",
-    "category": "Produce",
-    "price": 2.8,
-    "emoji": "🥕"
-  },
-  {
-    "id": 4,
-    "name": "Potatoes (2kg)",
-    "category": "Produce",
-    "price": 4.0,
-    "emoji": "🥔"
-  },
-  {
-    "id": 5,
-    "name": "Onions (1kg)",
-    "category": "Produce",
-    "price": 2.5,
-    "emoji": "🧅"
-  },
-  {
-    "id": 6,
-    "name": "Tomatoes (500g)",
-    "category": "Produce",
-    "price": 3.9,
-    "emoji": "🍅"
-  },
-  {
-    "id": 7,
-    "name": "Lettuce",
-    "category": "Produce",
-    "price": 2.6,
-    "emoji": "🥬"
-  },
-  {
-    "id": 8,
-    "name": "Broccoli",
-    "category": "Produce",
-    "price": 3.5,
-    "emoji": "🥦"
-  },
-  {
-    "id": 9,
-    "name": "Capsicum",
-    "category": "Produce",
-    "price": 2.2,
-    "emoji": "🫑"
-  },
-  {
-    "id": 10,
-    "name": "Avocado",
-    "category": "Produce",
-    "price": 1.8,
-    "emoji": "🥑"
-  },
-  {
-    "id": 11,
-    "name": "Milk (2L)",
-    "category": "Dairy & Eggs",
-    "price": 4.3,
-    "emoji": "🥛"
-  },
-  {
-    "id": 12,
-    "name": "Eggs (dozen)",
-    "category": "Dairy & Eggs",
-    "price": 7.5,
-    "emoji": "🥚"
-  },
-  {
-    "id": 13,
-    "name": "Butter (500g)",
-    "category": "Dairy & Eggs",
-    "price": 6.2,
-    "emoji": "🧈"
-  },
-  {
-    "id": 14,
-    "name": "Cheese (block 500g)",
-    "category": "Dairy & Eggs",
-    "price": 8.9,
-    "emoji": "🧀"
-  },
-  {
-    "id": 15,
-    "name": "Yoghurt (1kg)",
-    "category": "Dairy & Eggs",
-    "price": 5.4,
-    "emoji": "🥣"
-  },
-  {
-    "id": 16,
-    "name": "Cream (300ml)",
-    "category": "Dairy & Eggs",
-    "price": 3.1,
-    "emoji": "🥛"
-  },
-  {
-    "id": 17,
-    "name": "Chicken Breast (1kg)",
-    "category": "Meat & Protein",
-    "price": 12.5,
-    "emoji": "🍗"
-  },
-  {
-    "id": 18,
-    "name": "Beef Mince (1kg)",
-    "category": "Meat & Protein",
-    "price": 13.9,
-    "emoji": "🥩"
-  },
-  {
-    "id": 19,
-    "name": "Sausages (1kg)",
-    "category": "Meat & Protein",
-    "price": 9.8,
-    "emoji": "🌭"
-  },
-  {
-    "id": 20,
-    "name": "Bacon (250g)",
-    "category": "Meat & Protein",
-    "price": 6.5,
-    "emoji": "🥓"
-  },
-  {
-    "id": 21,
-    "name": "Salmon Fillet (400g)",
-    "category": "Meat & Protein",
-    "price": 14.0,
-    "emoji": "🐟"
-  },
-  {
-    "id": 22,
-    "name": "Canned Tuna (185g)",
-    "category": "Meat & Protein",
-    "price": 2.5,
-    "emoji": "🥫"
-  },
-  {
-    "id": 23,
-    "name": "Tofu (400g)",
-    "category": "Meat & Protein",
-    "price": 3.8,
-    "emoji": "🧊"
-  },
-  {
-    "id": 24,
-    "name": "White Bread (700g)",
-    "category": "Bakery",
-    "price": 3.2,
-    "emoji": "🍞"
-  },
-  {
-    "id": 25,
-    "name": "Wholemeal Bread (700g)",
-    "category": "Bakery",
-    "price": 3.6,
-    "emoji": "🍞"
-  },
-  {
-    "id": 26,
-    "name": "Bread Rolls (6 pack)",
-    "category": "Bakery",
-    "price": 4.2,
-    "emoji": "🥖"
-  },
-  {
-    "id": 27,
-    "name": "Bagels (6 pack)",
-    "category": "Bakery",
-    "price": 5.0,
-    "emoji": "🥯"
-  },
-  {
-    "id": 28,
-    "name": "Muffins (4 pack)",
-    "category": "Bakery",
-    "price": 5.5,
-    "emoji": "🧁"
-  },
-  {
-    "id": 29,
-    "name": "Rice (2kg)",
-    "category": "Pantry & Grains",
-    "price": 5.8,
-    "emoji": "🍚"
-  },
-  {
-    "id": 30,
-    "name": "Pasta (500g)",
-    "category": "Pantry & Grains",
-    "price": 2.2,
-    "emoji": "🍝"
-  },
-  {
-    "id": 31,
-    "name": "Rolled Oats (1kg)",
-    "category": "Pantry & Grains",
-    "price": 4.1,
-    "emoji": "🥣"
-  },
-  {
-    "id": 32,
-    "name": "Flour (1.5kg)",
-    "category": "Pantry & Grains",
-    "price": 3.3,
-    "emoji": "🌾"
-  },
-  {
-    "id": 33,
-    "name": "Breakfast Cereal (500g)",
-    "category": "Pantry & Grains",
-    "price": 5.9,
-    "emoji": "🥣"
-  },
-  {
-    "id": 34,
-    "name": "Canned Tomatoes (400g)",
-    "category": "Pantry & Grains",
-    "price": 1.8,
-    "emoji": "🥫"
-  },
-  {
-    "id": 35,
-    "name": "Canned Beans (400g)",
-    "category": "Pantry & Grains",
-    "price": 1.6,
-    "emoji": "🥫"
-  },
-  {
-    "id": 36,
-    "name": "Peanut Butter (375g)",
-    "category": "Pantry & Grains",
-    "price": 4.7,
-    "emoji": "🥜"
-  },
-  {
-    "id": 37,
-    "name": "Orange Juice (2L)",
-    "category": "Beverages",
-    "price": 4.8,
-    "emoji": "🧃"
-  },
-  {
-    "id": 38,
-    "name": "Coffee (200g)",
-    "category": "Beverages",
-    "price": 8.5,
-    "emoji": "☕"
-  },
-  {
-    "id": 39,
-    "name": "Tea Bags (100 pack)",
-    "category": "Beverages",
-    "price": 4.2,
-    "emoji": "🍵"
-  },
-  {
-    "id": 40,
-    "name": "Soft Drink (2L)",
-    "category": "Beverages",
-    "price": 3.5,
-    "emoji": "🥤"
-  },
-  {
-    "id": 41,
-    "name": "Bottled Water (1.5L)",
-    "category": "Beverages",
-    "price": 2.0,
-    "emoji": "💧"
-  },
-  {
-    "id": 42,
-    "name": "Potato Chips (150g)",
-    "category": "Snacks",
-    "price": 3.4,
-    "emoji": "🍟"
-  },
-  {
-    "id": 43,
-    "name": "Chocolate Block",
-    "category": "Snacks",
-    "price": 4.0,
-    "emoji": "🍫"
-  },
-  {
-    "id": 44,
-    "name": "Muesli Bars (6 pack)",
-    "category": "Snacks",
-    "price": 4.6,
-    "emoji": "🍪"
-  },
-  {
-    "id": 45,
-    "name": "Crackers (250g)",
-    "category": "Snacks",
-    "price": 3.1,
-    "emoji": "🍘"
-  },
-  {
-    "id": 46,
-    "name": "Mixed Nuts (200g)",
-    "category": "Snacks",
-    "price": 6.8,
-    "emoji": "🥜"
-  },
-  {
-    "id": 47,
-    "name": "Frozen Peas (1kg)",
-    "category": "Frozen",
-    "price": 3.2,
-    "emoji": "🫛"
-  },
-  {
-    "id": 48,
-    "name": "Frozen Chips (1kg)",
-    "category": "Frozen",
-    "price": 4.5,
-    "emoji": "🍟"
-  },
-  {
-    "id": 49,
-    "name": "Ice Cream (1L)",
-    "category": "Frozen",
-    "price": 6.9,
-    "emoji": "🍨"
-  },
-  {
-    "id": 50,
-    "name": "Frozen Mixed Vegetables (1kg)",
-    "category": "Frozen",
-    "price": 3.6,
-    "emoji": "🥦"
-  }
+  { "id": 1, "name": "Bananas (1kg)", "category": "Produce", "emoji": "🍌", "prices": [{"supermarket": "Generic", "price": 3.2}] },
+  { "id": 2, "name": "Apples (1kg)", "category": "Produce", "emoji": "🍎", "prices": [{"supermarket": "Generic", "price": 4.5}] },
+  { "id": 3, "name": "Carrots (1kg)", "category": "Produce", "emoji": "🥕", "prices": [{"supermarket": "Generic", "price": 2.8}] },
+  { "id": 4, "name": "Potatoes (2kg)", "category": "Produce", "emoji": "🥔", "prices": [{"supermarket": "Generic", "price": 4.0}] },
+  { "id": 5, "name": "Onions (1kg)", "category": "Produce", "emoji": "🧅", "prices": [{"supermarket": "PAK'nSAVE", "price": 2.5}, {"supermarket": "Woolworths", "price": 2.99}] },
+  { "id": 6, "name": "Tomatoes (500g)", "category": "Produce", "emoji": "🍅", "prices": [{"supermarket": "Generic", "price": 3.9}] },
+  { "id": 7, "name": "Lettuce", "category": "Produce", "emoji": "🥬", "prices": [{"supermarket": "Generic", "price": 2.6}] },
+  { "id": 8, "name": "Broccoli", "category": "Produce", "emoji": "🥦", "prices": [{"supermarket": "Generic", "price": 3.5}] },
+  { "id": 9, "name": "Capsicum", "category": "Produce", "emoji": "🫑", "prices": [{"supermarket": "Generic", "price": 2.2}] },
+  { "id": 10, "name": "Avocado", "category": "Produce", "emoji": "🥑", "prices": [{"supermarket": "Generic", "price": 1.8}] },
+  { "id": 11, "name": "Milk (2L)", "category": "Dairy & Eggs", "emoji": "🥛", "prices": [{"supermarket": "PAK'nSAVE", "price": 3.8}, {"supermarket": "Woolworths", "price": 4.2}] },
+  { "id": 12, "name": "Eggs (dozen)", "category": "Dairy & Eggs", "emoji": "🥚", "prices": [{"supermarket": "PAK'nSAVE", "price": 7.5}, {"supermarket": "Woolworths", "price": 8.2}] },
+  { "id": 13, "name": "Butter (500g)", "category": "Dairy & Eggs", "emoji": "🧈", "prices": [{"supermarket": "Generic", "price": 6.2}] },
+  { "id": 14, "name": "Cheese (block 500g)", "category": "Dairy & Eggs", "emoji": "🧀", "prices": [{"supermarket": "PAK'nSAVE", "price": 8.99}, {"supermarket": "Woolworths", "price": 10.5}] },
+  { "id": 15, "name": "Yoghurt (1kg)", "category": "Dairy & Eggs", "emoji": "🥣", "prices": [{"supermarket": "Generic", "price": 5.4}] },
+  { "id": 16, "name": "Cream (300ml)", "category": "Dairy & Eggs", "emoji": "🥛", "prices": [{"supermarket": "Generic", "price": 3.1}] },
+  { "id": 17, "name": "Chicken Breast (1kg)", "category": "Meat & Protein", "emoji": "🍗", "prices": [{"supermarket": "PAK'nSAVE", "price": 9.5}, {"supermarket": "Woolworths", "price": 11.0}] },
+  { "id": 18, "name": "Beef Mince (1kg)", "category": "Meat & Protein", "emoji": "🥩", "prices": [{"supermarket": "Generic", "price": 13.9}] },
+  { "id": 19, "name": "Sausages (1kg)", "category": "Meat & Protein", "emoji": "🌭", "prices": [{"supermarket": "Generic", "price": 9.8}] },
+  { "id": 20, "name": "Bacon (250g)", "category": "Meat & Protein", "emoji": "🥓", "prices": [{"supermarket": "Generic", "price": 6.5}] },
+  { "id": 21, "name": "Salmon Fillet (400g)", "category": "Meat & Protein", "emoji": "🐟", "prices": [{"supermarket": "Generic", "price": 14.0}] },
+  { "id": 22, "name": "Canned Tuna (185g)", "category": "Meat & Protein", "emoji": "🥫", "prices": [{"supermarket": "Generic", "price": 2.5}] },
+  { "id": 23, "name": "Tofu (400g)", "category": "Meat & Protein", "emoji": "🧊", "prices": [{"supermarket": "Generic", "price": 3.8}] },
+  { "id": 24, "name": "White Bread (700g)", "category": "Bakery", "emoji": "🍞", "prices": [{"supermarket": "PAK'nSAVE", "price": 1.89}, {"supermarket": "Woolworths", "price": 2.2}] },
+  { "id": 25, "name": "Wholemeal Bread (700g)", "category": "Bakery", "emoji": "🍞", "prices": [{"supermarket": "Generic", "price": 3.6}] },
+  { "id": 26, "name": "Bread Rolls (6 pack)", "category": "Bakery", "emoji": "🥖", "prices": [{"supermarket": "Generic", "price": 4.2}] },
+  { "id": 27, "name": "Bagels (6 pack)", "category": "Bakery", "emoji": "🥯", "prices": [{"supermarket": "Generic", "price": 5.0}] },
+  { "id": 28, "name": "Muffins (4 pack)", "category": "Bakery", "emoji": "🧁", "prices": [{"supermarket": "Generic", "price": 5.5}] },
+  { "id": 29, "name": "Rice (2kg)", "category": "Pantry & Grains", "emoji": "🍚", "prices": [{"supermarket": "Generic", "price": 5.8}] },
+  { "id": 30, "name": "Pasta (500g)", "category": "Pantry & Grains", "emoji": "🍝", "prices": [{"supermarket": "Generic", "price": 2.2}] },
+  { "id": 31, "name": "Rolled Oats (1kg)", "category": "Pantry & Grains", "emoji": "🥣", "prices": [{"supermarket": "Generic", "price": 4.1}] },
+  { "id": 32, "name": "Flour (1.5kg)", "category": "Pantry & Grains", "emoji": "🌾", "prices": [{"supermarket": "Generic", "price": 3.3}] },
+  { "id": 33, "name": "Breakfast Cereal (500g)", "category": "Pantry & Grains", "emoji": "🥣", "prices": [{"supermarket": "Generic", "price": 5.9}] },
+  { "id": 34, "name": "Canned Tomatoes (400g)", "category": "Pantry & Grains", "emoji": "🥫", "prices": [{"supermarket": "Generic", "price": 1.8}] },
+  { "id": 35, "name": "Canned Beans (400g)", "category": "Pantry & Grains", "emoji": "🥫", "prices": [{"supermarket": "PAK'nSAVE", "price": 1.49}, {"supermarket": "Woolworths", "price": 1.75}] },
+  { "id": 36, "name": "Peanut Butter (375g)", "category": "Pantry & Grains", "emoji": "🥜", "prices": [{"supermarket": "PAK'nSAVE", "price": 5.4}, {"supermarket": "Woolworths", "price": 5.9}] },
+  { "id": 37, "name": "Orange Juice (2L)", "category": "Beverages", "emoji": "🧃", "prices": [{"supermarket": "Generic", "price": 4.8}] },
+  { "id": 38, "name": "Coffee (200g)", "category": "Beverages", "emoji": "☕", "prices": [{"supermarket": "Generic", "price": 8.5}] },
+  { "id": 39, "name": "Tea Bags (100 pack)", "category": "Beverages", "emoji": "🍵", "prices": [{"supermarket": "Generic", "price": 4.2}] },
+  { "id": 40, "name": "Soft Drink (2L)", "category": "Beverages", "emoji": "🥤", "prices": [{"supermarket": "Generic", "price": 3.5}] },
+  { "id": 41, "name": "Bottled Water (1.5L)", "category": "Beverages", "emoji": "💧", "prices": [{"supermarket": "Generic", "price": 2.0}] },
+  { "id": 42, "name": "Potato Chips (150g)", "category": "Snacks", "emoji": "🍟", "prices": [{"supermarket": "Generic", "price": 3.4}] },
+  { "id": 43, "name": "Chocolate Block", "category": "Snacks", "emoji": "🍫", "prices": [{"supermarket": "Generic", "price": 4.0}] },
+  { "id": 44, "name": "Muesli Bars (6 pack)", "category": "Snacks", "emoji": "🍪", "prices": [{"supermarket": "Generic", "price": 4.6}] },
+  { "id": 45, "name": "Crackers (250g)", "category": "Snacks", "emoji": "🍘", "prices": [{"supermarket": "Generic", "price": 3.1}] },
+  { "id": 46, "name": "Mixed Nuts (200g)", "category": "Snacks", "emoji": "🥜", "prices": [{"supermarket": "Generic", "price": 6.8}] },
+  { "id": 47, "name": "Frozen Peas (1kg)", "category": "Frozen", "emoji": "🫛", "prices": [{"supermarket": "Generic", "price": 3.2}] },
+  { "id": 48, "name": "Frozen Chips (1kg)", "category": "Frozen", "emoji": "🍟", "prices": [{"supermarket": "Generic", "price": 4.5}] },
+  { "id": 49, "name": "Ice Cream (1L)", "category": "Frozen", "emoji": "🍨", "prices": [{"supermarket": "Generic", "price": 6.9}] },
+  { "id": 50, "name": "Frozen Mixed Vegetables (1kg)", "category": "Frozen", "emoji": "🥦", "prices": [{"supermarket": "Generic", "price": 3.6}] }
 ]

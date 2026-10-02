@@ -184,6 +184,43 @@ body {
     margin-bottom: 10px;
 }
 
+.cheapest-badge {
+    display: inline-block;
+    margin-left: 6px;
+    background: #22c55e;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.compare-link {
+    background: none;
+    border: none;
+    color: #2E5B8A;
+    font-size: 0.75rem;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 2px 0;
+}
+
+.price-comparison {
+    margin-top: 6px;
+    width: 100%;
+    border: 1px solid #DDDDDD;
+    border-radius: 6px;
+    padding: 6px 10px;
+    background: #FAFAFA;
+}
+
+.price-comparison-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    padding: 2px 0;
+}
+
 .item-actions {
     display: flex;
     align-items: center;

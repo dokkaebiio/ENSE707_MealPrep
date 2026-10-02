@@ -50,7 +50,34 @@
                     <div class="item-card">
                         <div class="item-emoji">@item.Emoji</div>
                         <div class="item-name">@item.Name</div>
-                        <div class="item-price">$@item.Price.ToString("F2") each</div>
+                        <div class="item-price">
+                            $@item.Price.ToString("F2") each
+                            @if (item.HasPriceComparison)
+                            {
+                                <span class="cheapest-badge">@item.CheapestSupermarket</span>
+                            }
+                        </div>
+
+                        @if (item.HasPriceComparison)
+                        {
+                            <button class="compare-link" @onclick="() => ToggleCompare(item.Id)">
+                                @(IsComparing(item.Id) ? "Hide prices" : "Compare prices")
+                            </button>
+
+                            @if (IsComparing(item.Id))
+                            {
+                                <div class="price-comparison">
+                                    @foreach (var p in item.Prices.OrderBy(p => p.Price))
+                                    {
+                                        <div class="price-comparison-row">
+                                            <span>@p.Supermarket</span>
+                                            <span>$@p.Price.ToString("F2")</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+
                         <div class="item-actions">
                             <button class="qty-btn">−</button>
                             <div class="qty-display">1</div>
@@ -258,6 +285,17 @@
             (SelectedCategory == "All" || i.Category == SelectedCategory) &&
             (string.IsNullOrWhiteSpace(SearchText) ||
              i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+
+    // Item ids whose supermarket price comparison is currently expanded.
+    private HashSet<int> ExpandedComparisons = new();
+
+    private bool IsComparing(int itemId) => ExpandedComparisons.Contains(itemId);
+
+    private void ToggleCompare(int itemId)
+    {
+        if (!ExpandedComparisons.Add(itemId))
+            ExpandedComparisons.Remove(itemId);
+    }
 
     protected override async Task OnInitializedAsync()
     {
