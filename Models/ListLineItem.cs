@@ -11,5 +11,9 @@ namespace MealPrep.Models
         public int Qty { get; set; }
 
         public decimal LineTotal => UnitPrice * Qty;
+
+        // Copy of the item's full per-supermarket prices, captured when added
+        // to the cart, so whole-cart totals can be computed per supermarket (FR7).
+        public List<SupermarketPrice> Prices { get; set; } = new();
     }
 }

@@ -25,6 +25,16 @@
 <div class="page-layout">
 
     <div class="main-content">
+        <div class="location-select-row">
+            <label for="city">Your location:</label>
+            <select id="city" @bind="SelectedCity">
+                @foreach (var city in StoreBranches.Cities)
+                {
+                    <option value="@city">@city</option>
+                }
+            </select>
+        </div>
+
         <div class="search-row">
             <input type="text" placeholder="Search items..." class="search-box"
                    @bind="SearchText" @bind:event="oninput" />
@@ -163,6 +173,20 @@
                 <div class="cart-summary-total">
                     Total: $@RunningTotal.ToString("F2")
                 </div>
+
+                @if (BranchTotals.Any())
+                {
+                    <div class="cart-supermarket-comparison">
+                        <div class="cart-supermarket-comparison-title">Best store for this cart in @SelectedCity:</div>
+                        @foreach (var (branch, total) in BranchTotals)
+                        {
+                            <div class="supermarket-total-row @(branch == BestOverallBranch ? "best-market" : "")">
+                                <span>@branch.Name @(branch == BestOverallBranch ? "✅" : "")</span>
+                                <span>$@total.ToString("F2")</span>
+                            </div>
+                        }
+                    </div>
+                }
 
                 <button class="finish-shopping-btn"
                         disabled="@(!Cart.Any() || Auth.CurrentUser is null)"
@@ -322,10 +346,44 @@
                 Id = item.Id,
                 Name = item.Name,
                 UnitPrice = item.Price,
-                Qty = 1
+                Qty = 1,
+                Prices = item.Prices
             });
         }
     }
+
+    // --- Whole-cart store comparison, per branch in the selected city (FR7) ---
+
+    private string SelectedCity = StoreBranches.Cities.FirstOrDefault() ?? "Auckland";
+
+    private List<(Branch Branch, decimal Total)> BranchTotals
+    {
+        get
+        {
+            var relevantBranches = StoreBranches.All.Where(b => b.City == SelectedCity).ToList();
+            if (!Cart.Any() || !relevantBranches.Any())
+                return new();
+
+            var results = new List<(Branch, decimal)>();
+            foreach (var branch in relevantBranches)
+            {
+                decimal total = 0m;
+                foreach (var line in Cart)
+                {
+                    var priceAtBrand = line.Prices.FirstOrDefault(p => p.Supermarket == branch.Supermarket);
+                    // Fallback: items without a price at this brand use their
+                    // base/cheapest price instead — a reasonable estimate, not exact.
+                    var basePrice = priceAtBrand?.Price ?? line.UnitPrice;
+                    total += basePrice * branch.PriceModifier * line.Qty;
+                }
+                results.Add((branch, total));
+            }
+
+            return results.OrderBy(r => r.Item2).ToList();
+        }
+    }
+
+    private Branch? BestOverallBranch => BranchTotals.FirstOrDefault().Branch;
 
     private void RemoveFromCart(ListLineItem line)
     {

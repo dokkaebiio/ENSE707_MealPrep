@@ -106,6 +106,20 @@ body {
    Search + item cards
    ========================================================= */
 
+.location-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.location-select-row select {
+    padding: 8px 10px;
+    border: 1px solid #DDDDDD;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
 .search-row {
     display: flex;
     gap: 10px;
@@ -472,6 +486,33 @@ body {
     color: #B02A2A;
     font-size: 1rem;
     cursor: pointer;
+}
+
+.cart-supermarket-comparison {
+    margin: 12px 0;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #FAFAFA;
+}
+
+.cart-supermarket-comparison-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #444444;
+    margin-bottom: 6px;
+}
+
+.supermarket-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    padding: 3px 0;
+}
+
+.supermarket-total-row.best-market {
+    font-weight: 700;
+    color: #1E7B34;
 }
 
 .create-recipe-btn,
