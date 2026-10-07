@@ -122,8 +122,11 @@
                             <span class="suggested-amount">$@SuggestedBudget.Value.ToString("F2")</span>
                             <button class="use-suggestion-btn" @onclick="UseSuggestedBudget">Use Budget</button>
                         </div>
-                        <div class="suggested-basis">
-                            Based on your last @TripsUsed shopping @(TripsUsed == 1 ? "trip" : "trips")
+                        <div class="suggested-footer">
+                            <span class="suggested-basis">
+                                Based on your last @TripsUsed shopping @(TripsUsed == 1 ? "trip" : "trips")
+                            </span>
+                            <button class="reset-history-btn" @onclick="ConfirmResetHistory">Reset</button>
                         </div>
                     </div>
                 }
@@ -171,7 +174,12 @@
                 </div>
 
                 <div class="cart-summary-total">
-                    Total: $@RunningTotal.ToString("F2")
+                    <div class="total-line total-line-main">
+                        Total (incl. GST): $@RunningTotal.ToString("F2")
+                    </div>
+                    <div class="total-line total-line-sub">
+                        Excl. GST: $@TotalExclGst.ToString("F2") &nbsp;·&nbsp; GST: $@GstAmount.ToString("F2")
+                    </div>
                 </div>
 
                 @if (BranchTotals.Any())
@@ -296,6 +304,18 @@
         </div>
     </div>
 }
+@if (ShowResetConfirm)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <p>Clear your shopping history? This removes all @SpendingHistoryList.Count recorded trip(s) and the suggested budget will disappear until you shop again.</p>
+            <div class="modal-actions">
+                <button @onclick="DoResetHistory">Yes, reset</button>
+                <button @onclick="CancelResetHistory">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     // ---------- Items / search ----------
@@ -351,6 +371,13 @@
             });
         }
     }
+
+    // --- GST (FR5) ---
+    // NZ GST rate. Item prices are assumed GST-inclusive, matching standard NZ retail pricing.
+    private const decimal GstRate = 0.15m;
+
+    private decimal TotalExclGst => Math.Round(RunningTotal / (1 + GstRate), 2);
+    private decimal GstAmount => Math.Round(RunningTotal - TotalExclGst, 2);
 
     // --- Whole-cart store comparison, per branch in the selected city (FR7) ---
 
@@ -509,6 +536,29 @@
         await SpendingHistory.LogTripAsync(Auth.CurrentUser.Email, RunningTotal);
         Cart.Clear();
         await LoadSpendingHistory(); // refresh the suggestion with the new trip included
+    }
+
+    // Resets the user's spending history and suggested budget. This is a destructive action, so we show a confirmation modal first.
+    private bool ShowResetConfirm = false;
+
+    private void ConfirmResetHistory()
+    {
+        ShowResetConfirm = true;
+    }
+
+    private void CancelResetHistory()
+    {
+        ShowResetConfirm = false;
+    }
+
+    private async Task DoResetHistory()
+    {
+        if (Auth.CurrentUser is not null)
+        {
+            await SpendingHistory.ClearHistoryAsync(Auth.CurrentUser.Email);
+            await LoadSpendingHistory();
+        }
+        ShowResetConfirm = false;
     }
 
     // ---------- Recipes ----------

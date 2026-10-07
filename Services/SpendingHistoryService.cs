@@ -26,6 +26,12 @@ namespace MealPrep.Services
             await _localStorage.SetItemAsync(KeyFor(email), history);
         }
 
+        // Clear history of last N trips for a user
+        public async Task ClearHistoryAsync(string email)
+        {
+            await _localStorage.RemoveItemAsync(KeyFor(email));
+        }
+
         // FR3: suggest a budget based on the user's past spending.
         // Average of the most recent N trips; null if there's no history yet.
         public decimal? GetSuggestedBudget(List<SpendingRecord> history, int lastN = 5)
