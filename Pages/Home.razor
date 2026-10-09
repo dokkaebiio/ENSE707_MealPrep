@@ -1,8 +1,9 @@
-@page "/"
+﻿@page "/"
 @using MealPrep.Services
 @inject HttpClient Http
 @inject AuthService Auth
 @inject SpendingHistoryService SpendingHistory
+@inject ILocalStorageService LocalStorage
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
@@ -344,15 +345,34 @@
     protected override async Task OnInitializedAsync()
     {
         AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
+        await LoadSavedStateAsync();
         await LoadSpendingHistory();
     }
+
+    // ---------- Persistence (NFR4) ----------
+    // Cart, budget and recipes are saved to local storage per user, with a
+    // "guest" key when nobody is logged in.
+
+    private string KeyPrefix => Auth.CurrentUser?.Email ?? "guest";
+
+    private async Task LoadSavedStateAsync()
+    {
+        Cart = await LocalStorage.GetItemAsync<List<ListLineItem>>($"{KeyPrefix}_cart") ?? new();
+        Recipes = await LocalStorage.GetItemAsync<List<Recipe>>($"{KeyPrefix}_recipes") ?? new();
+        Budget = await LocalStorage.GetItemAsync<decimal?>($"{KeyPrefix}_budget");
+        BudgetInput = Budget?.ToString() ?? "";
+    }
+
+    private async Task SaveCartAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_cart", Cart);
+    private async Task SaveRecipesAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_recipes", Recipes);
+    private async Task SaveBudgetAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_budget", Budget);
 
     // ---------- Cart ----------
 
     private List<ListLineItem> Cart = new();
     private decimal RunningTotal => Cart.Sum(c => c.LineTotal);
 
-    private void DoAdd(GroceryItem item)
+    private async Task DoAdd(GroceryItem item)
     {
         var existing = Cart.FirstOrDefault(c => c.Id == item.Id);
         if (existing is not null)
@@ -370,6 +390,7 @@
                 Prices = item.Prices
             });
         }
+        await SaveCartAsync();
     }
 
     // --- GST (FR5) ---
@@ -412,9 +433,10 @@
 
     private Branch? BestOverallBranch => BranchTotals.FirstOrDefault().Branch;
 
-    private void RemoveFromCart(ListLineItem line)
+    private async Task RemoveFromCart(ListLineItem line)
     {
         Cart.Remove(line);
+        await SaveCartAsync();
     }
 
     // ---------- Budget ----------
@@ -422,12 +444,13 @@
     private decimal? Budget;
     private string BudgetInput = "";
 
-    private void ApplyBudget()
+    private async Task ApplyBudget()
     {
         if (decimal.TryParse(BudgetInput, out var val) && val > 0)
             Budget = val;
         else
             Budget = null; // empty/invalid input clears the budget — "no budget" is allowed
+        await SaveBudgetAsync();
     }
 
     private decimal BudgetPercent => Budget.HasValue && Budget > 0
@@ -470,7 +493,7 @@
     private GroceryItem? PendingItem;      // item awaiting confirmation
     private decimal PendingTotalIfAdded;   // what the total would become
 
-    private void AddToCart(GroceryItem item)
+    private async Task AddToCart(GroceryItem item)
     {
         var wouldBeTotal = RunningTotal + item.Price;
 
@@ -482,13 +505,13 @@
             return;
         }
 
-        DoAdd(item);
+        await DoAdd(item);
     }
 
-    private void ConfirmAddAnyway()
+    private async Task ConfirmAddAnyway()
     {
         if (PendingItem is not null)
-            DoAdd(PendingItem);
+            await DoAdd(PendingItem);
         PendingItem = null;
     }
 
@@ -519,12 +542,13 @@
         SuggestedBudget = SpendingHistory.GetSuggestedBudget(SpendingHistoryList, SuggestionTripCount);
     }
 
-    private void UseSuggestedBudget()
+    private async Task UseSuggestedBudget()
     {
         if (SuggestedBudget.HasValue)
         {
             Budget = SuggestedBudget.Value;
             BudgetInput = SuggestedBudget.Value.ToString("F2");
+            await SaveBudgetAsync();
         }
     }
 
@@ -535,6 +559,7 @@
 
         await SpendingHistory.LogTripAsync(Auth.CurrentUser.Email, RunningTotal);
         Cart.Clear();
+        await SaveCartAsync();
         await LoadSpendingHistory(); // refresh the suggestion with the new trip included
     }
 
@@ -592,7 +617,7 @@
         ShowRecipeModal = true;
     }
 
-    private void SaveRecipe()
+    private async Task SaveRecipe()
     {
         if (string.IsNullOrWhiteSpace(RecipeNameInput))
         {
@@ -625,10 +650,11 @@
             EditingRecipe.Date = RecipeDateInput;
         }
 
+        await SaveRecipesAsync();
         CloseRecipeModal();
     }
 
-    private void DuplicateRecipeToNewDay()
+    private async Task DuplicateRecipeToNewDay()
     {
         if (EditingRecipe is null)
             return;
@@ -655,14 +681,16 @@
         };
 
         Recipes.Add(copy);
+        await SaveRecipesAsync();
         CloseRecipeModal();
     }
 
-    private void DeleteRecipe()
+    private async Task DeleteRecipe()
     {
         if (EditingRecipe is not null)
             Recipes.Remove(EditingRecipe);
 
+        await SaveRecipesAsync();
         CloseRecipeModal();
     }
 
@@ -686,5 +714,6 @@
     private async Task HandleLogout()
     {
         await Auth.LogoutAsync();
+        await LoadSavedStateAsync();   // show the guest's state, not the previous user's
     }
 }
