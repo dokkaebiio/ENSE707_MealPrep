@@ -125,6 +125,37 @@ namespace MealPrep.Tests
             var cartItems = cut.FindAll(".cart-item-row");
             Assert.Empty(cartItems);
         }
+
+        // TC-014 (NFR5): dark mode toggle
+        [Fact]
+        public void DarkModeToggle_AddsAndRemovesDarkClass()
+        {
+            var cut = Render<Home>();
+            Assert.Empty(cut.FindAll(".app-root.dark"));
+
+            cut.Find(".theme-toggle").Click();
+            Assert.NotEmpty(cut.FindAll(".app-root.dark"));
+
+            cut.Find(".theme-toggle").Click();
+            Assert.Empty(cut.FindAll(".app-root.dark"));
+        }
+
+        // TC-015 (NFR5): text size increases and is capped
+        [Fact]
+        public void TextSizeButtons_ChangeLevelAndRespectLimits()
+        {
+            var cut = Render<Home>();
+            Assert.NotEmpty(cut.FindAll(".app-root.text-0"));
+            Assert.True(cut.Find(".text-smaller").HasAttribute("disabled"));
+
+            cut.Find(".text-larger").Click();
+            Assert.NotEmpty(cut.FindAll(".app-root.text-1"));
+
+            cut.Find(".text-larger").Click();
+            Assert.NotEmpty(cut.FindAll(".app-root.text-2"));
+            Assert.True(cut.Find(".text-larger").HasAttribute("disabled"));
+        }
+
         private class FakeItemsHandler : HttpMessageHandler
         {
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

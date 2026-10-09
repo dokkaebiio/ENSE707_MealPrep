@@ -7,6 +7,18 @@
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
+<div class="app-root @(IsDark ? "dark" : "") text-@TextLevel">
+
+<div class="a11y-controls" role="group" aria-label="Accessibility settings">
+    <button class="theme-toggle" aria-pressed="@(IsDark ? "true" : "false")" @onclick="ToggleTheme">
+        @(IsDark ? "☀️ Light mode" : "🌙 Dark mode")
+    </button>
+    <button class="text-smaller" aria-label="Decrease text size"
+            disabled="@(TextLevel == 0)" @onclick="() => ChangeTextSize(-1)">A−</button>
+    <button class="text-larger" aria-label="Increase text size"
+            disabled="@(TextLevel == 2)" @onclick="() => ChangeTextSize(1)">A+</button>
+</div>
+
 <div class="top-nav">
     <span class="nav-badge">MealPlan</span>
     <nav class="nav-links">
@@ -318,6 +330,8 @@
     </div>
 }
 
+</div>
+
 @code {
     // ---------- Items / search ----------
 
@@ -345,6 +359,7 @@
     protected override async Task OnInitializedAsync()
     {
         AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
+        await LoadSettingsAsync();
         await LoadSavedStateAsync();
         await LoadSpendingHistory();
     }
@@ -707,6 +722,30 @@
         public string Name { get; set; } = "";
         public DateTime? Date { get; set; }
         public List<ListLineItem> Ingredients { get; set; } = new();
+    }
+
+    // ---------- Accessibility settings (NFR5) ----------
+    // Global keys rather than KeyPrefix, so the theme doesn't flip on logout.
+
+    private bool IsDark;
+    private int TextLevel;   // 0 = normal, 1 = large, 2 = extra large
+
+    private async Task LoadSettingsAsync()
+    {
+        IsDark = await LocalStorage.GetItemAsync<bool>("mealprep_dark");
+        TextLevel = Math.Clamp(await LocalStorage.GetItemAsync<int>("mealprep_textlevel"), 0, 2);
+    }
+
+    private async Task ToggleTheme()
+    {
+        IsDark = !IsDark;
+        await LocalStorage.SetItemAsync("mealprep_dark", IsDark);
+    }
+
+    private async Task ChangeTextSize(int delta)
+    {
+        TextLevel = Math.Clamp(TextLevel + delta, 0, 2);
+        await LocalStorage.SetItemAsync("mealprep_textlevel", TextLevel);
     }
 
     // ---------- Auth ----------

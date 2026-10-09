@@ -779,3 +779,152 @@ body {
         .auth-switch-link a:hover {
             text-decoration: underline;
         }
+
+/* =========================================================
+   Accessibility: text size (NFR5)
+   All font sizes above are in rem, which is relative to <html>,
+   so the text level is applied to the root element.
+   ========================================================= */
+
+:root { font-size: 16px; }
+:root:has(.app-root.text-1) { font-size: 18px; }
+:root:has(.app-root.text-2) { font-size: 20px; }
+
+.app-root button,
+.app-root input,
+.app-root select {
+    font-size: inherit;
+}
+
+.a11y-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 8px 16px;
+}
+
+    .a11y-controls button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0 12px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        background: white;
+        color: #222;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .a11y-controls button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+/* =========================================================
+   Accessibility: dark mode (NFR5)
+   Primary (blue) buttons keep their colour; only neutral
+   surfaces, text and inputs are restyled.
+   ========================================================= */
+
+body:has(.app-root.dark) { background: #121212; }
+
+.app-root.dark { color: #EAEAEA; }
+
+.app-root.dark .sidebar-card,
+.app-root.dark .item-card,
+.app-root.dark .modal-box,
+.app-root.dark .cart-item-row,
+.app-root.dark .recipe-card,
+.app-root.dark .suggested-card,
+.app-root.dark .price-comparison,
+.app-root.dark .cart-supermarket-comparison,
+.app-root.dark .search-row,
+.app-root.dark .Search-results {
+    background: #1E1E1E;
+    color: #EAEAEA;
+    border-color: #333333;
+}
+
+.app-root.dark .recipe-card:hover { background: #26303B; }
+
+.app-root.dark input,
+.app-root.dark select,
+.app-root.dark .qty-btn,
+.app-root.dark .a11y-controls button {
+    background: #2A2A2A;
+    color: #EAEAEA;
+    border: 1px solid #444444;
+}
+
+.app-root.dark .nav-links a,
+.app-root.dark .recipe-ingredients-preview ul { color: #EAEAEA; }
+
+.app-root.dark .nav-links a:hover { background: #2A2A2A; }
+
+.app-root.dark .item-price,
+.app-root.dark .empty-msg,
+.app-root.dark .cart-item-qty,
+.app-root.dark .total-line-sub,
+.app-root.dark .recipes-empty,
+.app-root.dark .recipe-card-count,
+.app-root.dark .suggested-basis,
+.app-root.dark .cart-supermarket-comparison-title,
+.app-root.dark .recipe-ingredients-preview label { color: #B0B0B0; }
+
+.app-root.dark .compare-link,
+.app-root.dark .suggested-label,
+.app-root.dark .recipe-card-date,
+.app-root.dark a { color: #8AB4F8; }
+
+.app-root.dark .remove-btn,
+.app-root.dark .reset-history-btn,
+.app-root.dark .recipe-error { color: #F28B82; }
+
+.app-root.dark .sidebar-divider { border-top-color: #333333; }
+
+/* =========================================================
+   Responsive layout (NFR2)
+   ========================================================= */
+
+@media (max-width: 768px) {
+    body { padding: 0 12px; }
+
+    .top-nav { padding: 12px 0; }
+
+    .page-layout {
+        flex-direction: column;   /* sidebar stacks under the items */
+        align-items: stretch;
+    }
+
+        .page-layout > * {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+    .Search-results {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .search-row {
+        flex-wrap: wrap;
+        padding: 12px;
+    }
+
+        .search-box { flex: 1 1 100%; min-width: 0; }
+
+    .cart-item-row { grid-template-columns: 1fr 50px 44px; }
+
+    .modal-box {
+        width: 92vw;
+        max-width: 92vw;
+    }
+
+    .modal-actions { flex-direction: column; }
+
+        .modal-actions button { width: 100%; }
+
+    button, input, select { min-height: 44px; }   /* comfortable tap targets */
+}
