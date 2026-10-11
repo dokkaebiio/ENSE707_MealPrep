@@ -22,6 +22,69 @@
 <div class="top-nav">
     <span class="nav-badge">MealPlan</span>
     <nav class="nav-links">
+            <div class="notif-wrapper">
+                @if (DemoMode)
+                {
+                    <button class="demo-btn" @onclick="SimulateDealUpdate">Demo: new deal</button>
+                    <button class="demo-btn" @onclick="ResetDealsDemo">Demo: reset</button>
+                }
+                <button class="notif-bell" aria-label="@BellLabel"
+                        aria-expanded="@(ShowNotifications ? "true" : "false")"
+                        @onclick="ToggleNotifications">
+                    🔔
+                    @if (UnseenDeals.Count > 0)
+                    {
+                        <span class="notif-count">@UnseenDeals.Count</span>
+                    }
+                </button>
+
+                @if (ShowNotifications)
+                {
+                    <div class="notif-panel" role="region" aria-label="Deal notifications">
+                        <div class="notif-header">
+                            <strong>Deals</strong>
+                            <button class="notif-mark-read" disabled="@(UnseenDeals.Count == 0)"
+                                    @onclick="MarkDealsSeen">
+                                Mark all as read
+                            </button>
+                        </div>
+
+                        @if (!ActiveDeals.Any())
+                        {
+                            <div class="notif-empty">No deals right now.</div>
+                        }
+
+                        @foreach (var deal in ActiveDeals)
+                        {
+                            var item = AllItems.FirstOrDefault(i => i.Id == deal.ItemId);
+                            if (item is null) { continue; }
+                            var isNew = IsUnseen(deal);
+
+                            <div class="notif-item @(isNew ? "notif-new" : "")">
+                                <div class="notif-item-title">
+                                    @item.Emoji @item.Name
+                                    @if (isNew)
+                                    {
+                                        <span class="notif-tag">New</span>
+                                    }
+                                    @if (Cart.Any(c => c.Id == deal.ItemId))
+                                    {
+                                        <span class="notif-tag notif-tag-cart">In your cart</span>
+                                    }
+                                </div>
+                                <div class="notif-item-detail">
+                                    $@deal.DealPrice.ToString("F2") at @deal.Supermarket
+                                    @if (RegularPrice(deal) is decimal was)
+                                    {
+                                        <span class="notif-was">$@was.ToString("F2")</span>
+                                    }
+                                </div>
+                                <div class="notif-item-expiry">Ends @deal.ExpiresOn.ToString("ddd d MMM")</div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
         @if (Auth.CurrentUser is not null)
         {
             <span>Hi, @Auth.CurrentUser.Name</span>
@@ -359,9 +422,112 @@
     protected override async Task OnInitializedAsync()
     {
         AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
+        await LoadDealsAsync();
         await LoadSettingsAsync();
         await LoadSavedStateAsync();
         await LoadSpendingHistory();
+    }
+
+    // ---------- Deal notifications (FR4) ----------
+    // Prototype scope: deals come from wwwroot/data/deals.json. "Updated" means a
+    // deal's UpdatedAt is newer than the user's last "mark all as read".
+    // No server, so nothing is pushed while the app is closed.
+
+    private List<Deal> AllDeals = new();
+    private DateTime? DealsLastSeen;
+    private bool ShowNotifications;
+
+    private List<Deal> ActiveDeals => DealNotifier.GetActiveDeals(AllDeals, DateTime.Now);
+    private List<Deal> UnseenDeals => DealNotifier.GetUnseenDeals(AllDeals, DealsLastSeen, DateTime.Now);
+    private bool IsUnseen(Deal deal) => UnseenDeals.Any(u => u.Id == deal.Id);
+
+    private string BellLabel =>
+        UnseenDeals.Count == 0 ? "Deal notifications" : $"Deal notifications, {UnseenDeals.Count} new";
+
+    private decimal? RegularPrice(Deal deal) =>
+        AllItems.FirstOrDefault(i => i.Id == deal.ItemId)
+                ?.Prices?.FirstOrDefault(p => p.Supermarket == deal.Supermarket)?.Price;
+
+    private void ToggleNotifications() => ShowNotifications = !ShowNotifications;
+
+    private async Task MarkDealsSeen()
+    {
+        DealsLastSeen = DateTime.Now;
+        await LocalStorage.SetItemAsync($"{KeyPrefix}_deals_seen", DealsLastSeen);
+    }
+
+    // ---------- For Demo and Presentation Use Only) ----------
+    // Visit /?demo=true to show the demo buttons. They only change in-memory data:
+    // deals.json is untouched, and a page reload returns to the file's contents.        
+
+    [Parameter, SupplyParameterFromQuery(Name = "demo")]
+    public string? Demo { get; set; }
+
+    private bool DemoMode => string.Equals(Demo, "true", StringComparison.OrdinalIgnoreCase);
+
+    private readonly Random _demoRandom = new();
+
+    // Demo-created deals are stored under a global key (not per-user), because deals
+    // themselves aren't user-specific. Only demo deals go here; deals.json is never modified.
+    private const string DemoDealsKey = "mealprep_demo_deals";
+
+    private async Task LoadDealsAsync()
+    {
+        try
+        {
+            AllDeals = await Http.GetFromJsonAsync<List<Deal>>($"data/deals.json?v={DateTime.Now.Ticks}") ?? new();
+        }
+        catch (Exception ex) when (ex is HttpRequestException || ex is System.Text.Json.JsonException)
+        {
+            AllDeals = new();
+        }
+
+        // Deals added with the demo button survive reloads and also appear in normal
+        // (non-demo) mode.
+        var demoDeals = await LocalStorage.GetItemAsync<List<Deal>>(DemoDealsKey) ?? new();
+        AllDeals.AddRange(demoDeals);
+    }
+
+    private async Task SimulateDealUpdate()
+    {
+        var candidates = AllItems
+            .Where(i => i.Prices != null)
+            .SelectMany(i => i.Prices.Select(p => (Item: i, Entry: p)))
+            .Where(c => !AllDeals.Any(d => d.ItemId == c.Item.Id && d.Supermarket == c.Entry.Supermarket))
+            .ToList();
+
+        if (!candidates.Any())
+            return;
+
+        var pick = candidates
+            .OrderByDescending(c => Cart.Any(l => l.Id == c.Item.Id))
+            .ThenBy(_ => _demoRandom.Next())
+            .First();
+
+        var demoDeals = await LocalStorage.GetItemAsync<List<Deal>>(DemoDealsKey) ?? new();
+
+        var newDeal = new Deal
+        {
+            Id = 1000 + demoDeals.Count + 1,   // demo ids start at 1000 so they can't clash with deals.json
+            ItemId = pick.Item.Id,
+            Supermarket = pick.Entry.Supermarket,
+            DealPrice = Math.Round(pick.Entry.Price * 0.8m, 2),
+            ExpiresOn = DateTime.Today.AddDays(7).AddHours(23).AddMinutes(59),
+            UpdatedAt = DateTime.Now
+        };
+
+        demoDeals.Add(newDeal);
+        await LocalStorage.SetItemAsync(DemoDealsKey, demoDeals);
+        AllDeals.Add(newDeal);
+    }
+
+    // Clears the demo deals and the read state, so every deal in deals.json is New again.
+    private async Task ResetDealsDemo()
+    {
+        DealsLastSeen = null;
+        await LocalStorage.RemoveItemAsync($"{KeyPrefix}_deals_seen");
+        await LocalStorage.RemoveItemAsync(DemoDealsKey);
+        await LoadDealsAsync();
     }
 
     // ---------- Persistence (NFR4) ----------
@@ -376,6 +542,8 @@
         Recipes = await LocalStorage.GetItemAsync<List<Recipe>>($"{KeyPrefix}_recipes") ?? new();
         Budget = await LocalStorage.GetItemAsync<decimal?>($"{KeyPrefix}_budget");
         BudgetInput = Budget?.ToString() ?? "";
+        DealsLastSeen = await LocalStorage.GetItemAsync<DateTime?>($"{KeyPrefix}_deals_seen");   // new
+
     }
 
     private async Task SaveCartAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_cart", Cart);

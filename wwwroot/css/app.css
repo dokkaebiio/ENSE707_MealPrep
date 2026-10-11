@@ -32,6 +32,18 @@ body {
    Top navigation
    ========================================================= */
 
+.demo-btn {
+    min-height: 44px;
+    padding: 0 12px;
+    background: #FEF9C3;
+    color: #A16207;
+    border: 1px dashed #A16207;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 .top-nav {
     width: 100%;
     display: flex;
@@ -50,8 +62,134 @@ body {
 }
 
 .nav-links {
+    align-items: center;
+}
+
+.notif-wrapper {
+    position: relative;
+}
+
+.notif-bell {
+    position: relative;
+    min-width: 44px;
+    min-height: 44px;
+    background: none;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.notif-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    background: #B91C1C;
+    color: white;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+}
+
+.notif-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: min(340px, 90vw);
+    max-height: 420px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #DDDDDD;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    z-index: 1500;
+}
+
+.notif-header {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.notif-mark-read {
+    background: none;
+    border: none;
+    color: #2E5B8A;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: underline;
+    min-height: 44px;
+    cursor: pointer;
+}
+
+    .notif-mark-read:disabled {
+        color: #999999;
+        text-decoration: none;
+        cursor: not-allowed;
+    }
+
+.notif-item {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: #FAFAFA;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+}
+
+    .notif-item.notif-new {
+        background: #EAF1F8;
+        border-color: #2E5B8A;
+    }
+
+.notif-item-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.notif-item-detail {
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+.notif-item-expiry {
+    font-size: 0.75rem;
+    color: #666666;
+    margin-top: 2px;
+}
+
+.notif-empty {
+    font-size: 0.85rem;
+    color: #666666;
+    padding: 8px 0;
+}
+
+.notif-was {
+    margin-left: 6px;
+    font-size: 0.75rem;
+    color: #777777;
+    text-decoration: line-through;
+}
+
+.notif-tag {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 8px;
+    background: #2E5B8A;
+    color: white;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.notif-tag-cart {
+    background: #15803D;
 }
 
     .nav-links a {
