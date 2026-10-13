@@ -164,12 +164,21 @@
                             }
                         }
 
-                        <div class="item-actions">
-                            <button class="qty-btn">−</button>
-                            <div class="qty-display">1</div>
-                            <button class="qty-btn">+</button>
-                            <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
-                        </div>
+                            <div class="item-actions">
+                                <button class="qty-btn" aria-label="Decrease quantity of @item.Name"
+                                        disabled="@(GetQty(item.Id) <= 1)" @onclick="() => ChangeQty(item.Id, -1)">
+                                    −
+                                </button>
+                                <input type="number" class="qty-input" min="1" max="99" inputmode="numeric"
+                                       aria-label="Quantity of @item.Name"
+                                       value="@GetQty(item.Id)"
+                                       @onchange="e => SetQty(item.Id, e.Value?.ToString())" />
+                                <button class="qty-btn" aria-label="Increase quantity of @item.Name"
+                                        @onclick="() => ChangeQty(item.Id, 1)">
+                                    +
+                                </button>
+                                <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
+                            </div>
                     </div>
                 }
             }
@@ -243,7 +252,17 @@
                                 <div class="item-name">@line.Name</div>
                                 <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
                             </div>
-                            <div class="cart-item-qty">Qty: @line.Qty</div>
+                                <div class="cart-item-qty-controls">
+                                    <button class="qty-btn" aria-label="Decrease quantity of @line.Name"
+                                            disabled="@(line.Qty <= 1)" @onclick="() => DecreaseQty(line)">
+                                        −
+                                    </button>
+                                    <span class="cart-item-qty"><span class="visually-hidden">Qty: </span>@line.Qty</span>
+                                    <button class="qty-btn" aria-label="Increase quantity of @line.Name"
+                                            @onclick="() => IncreaseQty(line)">
+                                        +
+                                    </button>
+                                </div>
                             <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
                         </div>
                     }
@@ -315,14 +334,14 @@
 </div>
 
 @* Over-budget confirmation modal *@
-@if (PendingItem is not null)
-{
-    <div class="modal-overlay">
-        <div class="modal-box">
-            <p>
-                Adding <strong>@PendingItem.Name</strong> will take you to
-                $@PendingTotalIfAdded.ToString("F2"), over your $@Budget?.ToString("F2") budget.
-            </p>
+    @if (PendingAction is not null)
+    {
+        <div class="modal-overlay">
+            <div class="modal-box">
+                <p>
+                    Adding <strong>@PendingLabel</strong> will take you to
+                    $@PendingTotalIfAdded.ToString("F2"), over your $@Budget?.ToString("F2") budget.
+                </p>
             <div class="modal-actions">
                 <button @onclick="ConfirmAddAnyway">Add anyway</button>
                 <button @onclick="CancelPendingAdd">Cancel</button>
@@ -555,12 +574,14 @@
     private List<ListLineItem> Cart = new();
     private decimal RunningTotal => Cart.Sum(c => c.LineTotal);
 
-    private async Task DoAdd(GroceryItem item)
+    private const int MaxQty = 99;
+
+    private async Task DoAdd(GroceryItem item, int qty = 1)
     {
         var existing = Cart.FirstOrDefault(c => c.Id == item.Id);
         if (existing is not null)
         {
-            existing.Qty++;
+            existing.Qty = Math.Min(existing.Qty + qty, MaxQty);
         }
         else
         {
@@ -569,7 +590,7 @@
                 Id = item.Id,
                 Name = item.Name,
                 UnitPrice = item.Price,
-                Qty = 1,
+                Qty = qty,
                 Prices = item.Prices
             });
         }
@@ -671,42 +692,96 @@
         BudgetPercent >= 75 ? "⚠" :
         "✓";
 
-    // ---------- Add-to-cart with over-budget prompt ----------
+    // ---------- Quantity selection and add-to-cart with over-budget prompt ----------
 
-    private GroceryItem? PendingItem;      // item awaiting confirmation
+    // Quantity picked on each item card before adding (defaults to 1).
+    private Dictionary<int, int> SelectedQty = new();
+
+    private int GetQty(int itemId) => SelectedQty.TryGetValue(itemId, out var q) ? q : 1;
+
+    private void ChangeQty(int itemId, int delta) => SelectedQty[itemId] = Math.Clamp(GetQty(itemId) + delta, 1, MaxQty);
+
+    private void SetQty(int itemId, string? raw) => SelectedQty[itemId] = ParseQty(raw);
+
+    // Turns whatever the user typed into a valid quantity:
+    // blank or invalid -> 1, decimals round down, anything above MaxQty -> MaxQty.
+    private static int ParseQty(string? raw)
+    {
+        if (!decimal.TryParse(raw, System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out var n))
+            return 1;
+
+        return (int)Math.Clamp(Math.Floor(n), 1, MaxQty);
+    }
+
+    // Waits for the user's answer to the over-budget prompt.
+    private Func<Task>? PendingAction;
+    private string PendingLabel = "";
     private decimal PendingTotalIfAdded;   // what the total would become
 
-    private async Task AddToCart(GroceryItem item)
+    // Everything that raises the total goes through here, so the budget check
+    // applies equally to item-card adds and + presses in the cart.
+    private async Task RunWithBudgetCheck(string label, decimal extraCost, Func<Task> action)
     {
-        var wouldBeTotal = RunningTotal + item.Price;
+        var wouldBeTotal = RunningTotal + extraCost;
 
         if (Budget.HasValue && wouldBeTotal > Budget.Value)
         {
-            // Don't add yet — ask first
-            PendingItem = item;
+            // ask users first
+            PendingLabel = label;
             PendingTotalIfAdded = wouldBeTotal;
+            PendingAction = action;
             return;
         }
 
-        await DoAdd(item);
+        await action();
+    }
+
+    private async Task AddToCart(GroceryItem item)
+    {
+        var qty = GetQty(item.Id);
+        var label = qty == 1 ? item.Name : $"{qty} × {item.Name}";
+
+        await RunWithBudgetCheck(label, item.Price * qty, async () =>
+        {
+            await DoAdd(item, qty);
+            SelectedQty.Remove(item.Id);   // back to 1 for the next add
+        });
+    }
+
+    private async Task IncreaseQty(ListLineItem line)
+    {
+        if (line.Qty >= MaxQty)
+            return;
+
+        await RunWithBudgetCheck(line.Name, line.UnitPrice, async () =>
+        {
+            line.Qty++;
+            await SaveCartAsync();
+        });
+    }
+
+    private async Task DecreaseQty(ListLineItem line)
+    {
+        if (line.Qty <= 1)
+            return;
+
+        line.Qty--;
+        await SaveCartAsync();
     }
 
     private async Task ConfirmAddAnyway()
     {
-        if (PendingItem is not null)
-            await DoAdd(PendingItem);
-        PendingItem = null;
+        var action = PendingAction;
+        PendingAction = null;
+        if (action is not null)
+            await action();
     }
 
-    private void CancelPendingAdd()
-    {
-        PendingItem = null;
-    }
+    private void CancelPendingAdd() => PendingAction = null;
 
-    private void GoChangeBudget()
-    {
-        PendingItem = null; // closes the modal so the user can edit the budget field
-    }
+    private void GoChangeBudget() => PendingAction = null;   // closes the modal so the user can edit the budget field
+
 
     // ---------- Spending history / suggested budget (FR3) ----------
 
