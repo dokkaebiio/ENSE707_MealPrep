@@ -14,156 +14,136 @@ using MealPrep.Services;
 
 namespace MealPrep.Tests
 {
-    public class CartTests : BunitContext
+
+    // Focused on testing Cart Management (adding/removing items, updating quantities, and calculating total price).
+    public class CartTests : HomeTestBase
     {
-        public CartTests()
-        {
-            // register a fake HttpClient that returns a single GroceryItem for /data/items.json
-            var handler = new FakeItemsHandler();
-            var client = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
-            Services.AddSingleton<HttpClient>(client);
-            JSInterop.Mode = JSRuntimeMode.Loose;   // lets localStorage calls succeed without a real browser
-            Services.AddBlazoredLocalStorage();
-            Services.AddScoped<AuthService>();
-            Services.AddScoped<SpendingHistoryService>();
-        }
 
-        // TC-001
+        private string MainTotal(IRenderedComponent<Home> cut) => cut.Find(".total-line-main").TextContent;
+        private string SubTotal(IRenderedComponent<Home> cut) => cut.Find(".total-line-sub").TextContent;
+
+        // TC-001 || FR6, FR5 || positive
         [Fact]
-        public void ClickingAddButton_AddsItemToCartUi() 
+        public async Task TC001_AddSingleItem_ShowsNameQtyPriceAndRemove()
         {
-            // Arrange
             var cut = Render<Home>();
 
-            // Act - click the Add button for the single item
-            cut.Find("button.add-btn").Click();
+            await AddFirstItemAsync(cut);
 
-            // Assert - cart shows one row
-            var cartItems = cut.FindAll(".cart-item-row");
-            Assert.Single(cartItems);
-
-            // Assert - item name and qty present
-            var name = cut.Find(".cart-item-info .item-name").TextContent.Trim();
-            Assert.Contains("Apple", name);
-
-            var qty = cut.Find(".cart-item-qty").TextContent.Trim();
-            Assert.Contains("Qty: 1", qty);
-
-            // Assert - unit price shown in cart
-            var priceText = cut.Find(".cart-item-info .item-price").TextContent.Trim();
-            Assert.Contains("$0.50", priceText);
-
-            // Assert - remove button exists
-            var remove = cut.Find(".remove-btn");
-            Assert.NotNull(remove);
+            Assert.Single(cut.FindAll(".cart-item-row"));
+            Assert.Contains("Apple", cut.Find(".cart-item-info .item-name").TextContent);
+            Assert.Contains("Qty: 1", cut.Find(".cart-item-qty").TextContent);
+            Assert.Contains("$0.50", cut.Find(".cart-item-info .item-price").TextContent);
+            Assert.NotNull(cut.Find(".remove-btn"));
         }
 
-        // TC-002
+        // TC-002 | FR5, FR6 | positive
         [Fact]
-        public async Task AddSameItemTwice_IncrementsQtyInCartUi()
+        public async Task TC002_AddSameItemTwice_ShowsQtyTwoInOneRow()
         {
-            // Arrange
             var cut = Render<Home>();
-            // Act - click the Add button for the single item twice
-            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
-            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
-            // Assert - cart shows one row
-            var cartItems = cut.FindAll(".cart-item-row");
-            Assert.Single(cartItems);
-            // Assert - item name and qty present
-            var name = cut.Find(".cart-item-info .item-name").TextContent.Trim();
-            Assert.Contains("Apple", name);
-            var qty = cut.Find(".cart-item-qty").TextContent.Trim();
-            Assert.Contains("Qty: 2", qty);
+
+            await AddFirstItemAsync(cut);
+            await AddFirstItemAsync(cut);
+
+            Assert.Single(cut.FindAll(".cart-item-row"));
+            Assert.Contains("Qty: 2", cut.Find(".cart-item-qty").TextContent);
         }
 
-        // TC-003
+        // TC-003 | FR5, FR6 | positive
         [Fact]
-        public async Task AddDifferentItems_AddsBothItemsToCartUi()
+        public async Task TC003_AddTwoDifferentItems_ShowsTwoRowsAndSummedTotal()
         {
-            // Arrange
-            // Use a different fake handler that returns two items
-            var handler = new FakeItemsHandlerWithTwoItems();
-            var client = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
-            Services.AddSingleton<HttpClient>(client);
+            UseBackend(TestData.Items(TestData.Apple, TestData.Banana));
             var cut = Render<Home>();
-            // Act - click the Add button for both items
-            await cut.InvokeAsync(() => cut.FindAll("button.add-btn")[0].Click()); // Add Apple
-            await cut.InvokeAsync(() => cut.FindAll("button.add-btn")[1].Click()); // Add Banana
-            // Assert - cart shows two rows
-            var cartItems = cut.FindAll(".cart-item-row");
-            Assert.Equal(2, cartItems.Count);
-            //Assert - total price is correct
-            var totalPriceText = cut.Find(".cart-summary-total").TextContent.Trim();
-            Assert.Contains("$0.80", totalPriceText); // 0.5 + 0.3 = 0.8
+
+            await ClickAsync(cut, "button.add-btn", 0);   // Apple  $0.50
+            await ClickAsync(cut, "button.add-btn", 1);   // Banana $0.30
+
+            Assert.Equal(2, cut.FindAll(".cart-item-row").Count);
+            Assert.Contains("$0.80", cut.Find(".total-line-main").TextContent);
         }
 
         // TC-004
         [Fact]
-        public async Task RemoveItemFromCart_RemovesItemUi()
+        public async Task TC004_RemoveOneOfTwoItems_KeepsOtherAndLowersTotal()
         {
-            // Arrange
+            UseBackend(TestData.Items(TestData.Apple, TestData.Banana));
             var cut = Render<Home>();
-            // Act - click the Add button for the single item
-            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
-            // Assert - cart shows one row
-            var cartItems = cut.FindAll(".cart-item-row");
-            Assert.Single(cartItems);
-            // Act - click the Remove button
-            await cut.InvokeAsync(() => cut.Find(".remove-btn").Click());
-            // Assert - cart shows no rows
-            cartItems = cut.FindAll(".cart-item-row");
-            Assert.Empty(cartItems);
-            // Assert - total price is $0.00
-            var totalPriceText = cut.Find(".cart-summary-total").TextContent.Trim();
-            Assert.Contains("$0.00", totalPriceText);
+            await ClickAsync(cut, "button.add-btn", 0);   // Apple  $0.50
+            await ClickAsync(cut, "button.add-btn", 1);   // Banana $0.30
+
+            await ClickAsync(cut, ".remove-btn", 0);      // remove Apple
+
+            var rows = cut.FindAll(".cart-item-row");
+            Assert.Single(rows);
+            Assert.Contains("Banana", rows[0].TextContent);
+            Assert.Contains("$0.30", cut.Find(".total-line-main").TextContent);   // dropped Apple's $0.50
         }
-        // TC-011
+
+        // TC-011 | FR2/FR6 search | negative
         [Fact]
-        public void SearchWithNoMatches_ShowsNoResultsMessage()
+        public void TC011_SearchWithNoMatch_ShowsNoItemsFoundMessage()
         {
             var cut = Render<Home>();
-            var searchBox = cut.Find(".search-box");
-            searchBox.Input("zzzznonexistentitem");
 
+            cut.Find(".search-box").Input("zzzznonexistentitem");
 
-            var noResultsMessage = cut.Find(".empty-msg");
-            Assert.Contains("No items found", noResultsMessage.TextContent);
-        }
-        private class FakeItemsHandler : HttpMessageHandler
-        {
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                if (request.RequestUri?.AbsolutePath?.EndsWith("/data/items.json") == true || request.RequestUri?.AbsolutePath?.EndsWith("items.json") == true)
-                {
-                    var json = "[{\"Id\":1,\"Name\":\"Apple\",\"Category\":\"Fruit\",\"Prices\":[{\"Supermarket\":\"Generic\",\"Price\":0.5}],\"Emoji\":\"🍎\"}]";
-                    var response = new HttpResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
-                    };
-                    return Task.FromResult(response);
-                }
-
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
-            }
+            Assert.Contains("No items found", cut.Find(".empty-msg").TextContent);
         }
 
-        private class FakeItemsHandlerWithTwoItems : HttpMessageHandler
+        //TC-19 || FR5 || boundary (no items in cart)
+        [Fact]
+        public void TC019_EmptyCart_ShowsZeroForAllThreeFigures()
         {
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                if (request.RequestUri?.AbsolutePath?.EndsWith("/data/items.json") == true || request.RequestUri?.AbsolutePath?.EndsWith("items.json") == true)
-                {
-                    var json = "[{\"Id\":1,\"Name\":\"Apple\",\"Category\":\"Fruit\",\"Prices\":[{\"Supermarket\":\"Generic\",\"Price\":0.5}],\"Emoji\":\"🍎\"}," +
-                               "{\"Id\":2,\"Name\":\"Banana\",\"Category\":\"Fruit\",\"Prices\":[{\"Supermarket\":\"Generic\",\"Price\":0.3}],\"Emoji\":\"🍌\"}]";
-                    var response = new HttpResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
-                    };
-                    return Task.FromResult(response);
-                }
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
-            }
+            var cut = Render<Home>();
+
+            Assert.Contains("$0.00", MainTotal(cut));
+            Assert.Contains("Excl. GST: $0.00", SubTotal(cut));
+            Assert.Contains("GST: $0.00", SubTotal(cut));
+        }
+
+        //TC-20 || FR5 || positive
+        [Fact]
+        public async Task TC020_SingleItem_ShowsInclusiveExclusiveAndGst()
+        {
+            var cut = Render<Home>();
+
+            await AddFirstItemAsync(cut);
+
+            Assert.Contains("Total (incl. GST): $0.50", MainTotal(cut));
+            Assert.Contains("Excl. GST: $0.43", SubTotal(cut));
+            Assert.Contains("GST: $0.07", SubTotal(cut));
+        }
+
+        //TC-21 || FR5 || positive (recalculate after removing item)
+        [Fact]
+        public async Task TC021_RemovingAnItem_RecalculatesAllThreeFigures()
+        {
+            UseBackend(TestData.Items(TestData.Apple, TestData.Banana));
+            var cut = Render<Home>();
+            await ClickAsync(cut, "button.add-btn", 0);   // Apple  $0.50
+            await ClickAsync(cut, "button.add-btn", 1);   // Banana $0.30
+            Assert.Contains("Excl. GST: $0.70", SubTotal(cut));   // 0.80 / 1.15 = 0.6957
+
+            await ClickAsync(cut, ".remove-btn", 0);      // remove Apple
+
+            Assert.Contains("Total (incl. GST): $0.30", MainTotal(cut));
+            Assert.Contains("Excl. GST: $0.26", SubTotal(cut));
+            Assert.Contains("GST: $0.04", SubTotal(cut));
+        }
+
+        //TC-22 || FR6 || positive
+        [Fact]
+        public async Task TC022_TypedQuantity_AddsThatManyAndTotalMatches()
+        {
+            var cut = Render<Home>();
+
+            cut.Find(".qty-input").Change("3");
+            await AddFirstItemAsync(cut);
+
+            Assert.Contains("Qty: 3", cut.Find(".cart-item-qty").TextContent);
+            Assert.Contains("Total (incl. GST): $1.50", cut.Find(".total-line-main").TextContent);
         }
     }
 }

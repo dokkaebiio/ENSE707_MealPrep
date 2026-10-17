@@ -1,5 +1,8 @@
-﻿using Bunit;
+﻿using Blazored.LocalStorage;
+using Bunit;
+using MealPrep.Models;
 using MealPrep.Pages;
+using MealPrep.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net;
@@ -7,123 +10,120 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Blazored.LocalStorage;
-using MealPrep.Services;
 
 
 namespace MealPrep.Tests
 {
-    public class BudgetTests : BunitContext
+    public class BudgetTests : HomeTestBase
     {
-        public BudgetTests()
+        //This file focuses on testing all budget related requirements (FR3, FR5, FR6) including setting budgets, adding items, and handling over-budget scenarios.
+        // And accessibility features like dark mode and text size adjustments (NFR5).
+
+        private static readonly SpendingHistoryService Service = new(null!);
+
+        private static SpendingRecord Trip(int daysAgo, decimal total) =>
+            new() { Date = new DateTime(2026, 10, 1).AddDays(-daysAgo), Total = total };
+
+
+        // Set 1.00 budget, add 3 items at $0.50 each, and verify that the over-budget modal appears.
+        private async Task<IRenderedComponent<Home>> OpenOverBudgetPromptAsync()
         {
-            // register a fake HttpClient that returns a single GroceryItem for /data/items.json
-            var handler = new FakeItemsHandler();
-            var client = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
-            Services.AddSingleton<HttpClient>(client);
-            JSInterop.Mode = JSRuntimeMode.Loose;   // lets localStorage calls succeed without a real browser
-            Services.AddBlazoredLocalStorage();
-            Services.AddScoped<AuthService>();
-            Services.AddScoped<SpendingHistoryService>();
+            var cut = Render<Home>();
+            await SetBudgetAsync(cut, "1");
+
+            await AddFirstItemAsync(cut);
+            await AddFirstItemAsync(cut);
+            Assert.Empty(cut.FindAll(".modal-box"));      // total == budget is not "over"
+
+            await AddFirstItemAsync(cut);                 // $1.50 > $1.00
+            return cut;
         }
 
-        // TC-005
+        // TC-005 || FR5, FR6 || positive
         [Fact]
-        public void SetValidBudget_UpdatesBudgetUi()
+        public async Task TC005_SetValidBudget_ShowsBudgetAndLookingGood()
         {
             // Arrange
             var cut = Render<Home>();
-            // Act - set a valid budget
-            var budgetInput = cut.Find("#budget");
-            budgetInput.Input("100");
-            cut.Find(".set-budget-btn").Click();
-            // Assert - budget displayed in UI
-            var budgetDisplay = cut.Find(".budget-amount").TextContent.Trim();
-            Assert.Contains("$100.00", budgetDisplay);
-            var statusDisplay = cut.Find(".budget-status-label").TextContent.Trim();
-            Assert.Contains("Looking good", statusDisplay);
+
+            await SetBudgetAsync(cut, "100");
+            await AddFirstItemAsync(cut);
+
+            Assert.Contains("$100.00", cut.Find(".budget-amount").TextContent);
+            Assert.Contains("Looking good", cut.Find(".budget-status-label").TextContent);
         }
 
-        // TC-006
-        [Fact]
-        public void SetInvalidBudget_ClearsBudgetUi()
+        // TC-006 || FR5, FR6 || negative, invalid budget input
+        [Theory]
+        [InlineData("")]
+        [InlineData("abc")]
+        [InlineData("0")]
+        [InlineData("-10")]
+        public async Task TC006_InvalidBudget_ClearsBudgetAndShowsNoBudgetSet(string invalidInput)
         {
-            // Arrange
             var cut = Render<Home>();
-            // Act - set an invalid budget (negative value)
-            var budgetInput = cut.Find("#budget");
-            budgetInput.Input("-50");
-            cut.Find(".set-budget-btn").Click();
-            // Assert - budget displayed in UI is cleared or shows $0.00
-            var budgetDisplay = cut.Find(".budget-amount").TextContent.Trim();
-            Assert.Contains("Budget: Not set", budgetDisplay);
-            var statusDisplay = cut.Find(".budget-status-label").TextContent.Trim();
-            Assert.Contains("No budget set", statusDisplay);
+            await SetBudgetAsync(cut, "100");
+            Assert.Contains("$100.00", cut.Find(".budget-amount").TextContent);   // make sure budget is set before testing invalid input
+
+            await SetBudgetAsync(cut, invalidInput);
+
+            Assert.Contains("Budget: —", cut.Find(".budget-amount").TextContent);
+            Assert.Contains("No budget set", cut.Find(".budget-status-label").TextContent);
         }
 
-        // TC-007
+        // TC-007 || FR5, FR6 || negative, boundary case, adding item that exceeds budget
         [Fact]
-        public async Task AddItemOverBudget_ShowModal()
+        public async Task TC007_AddItemOverBudget_ShowsModalWithNameAndNewTotal()
         {
-            var cut = Render<Home>();
-            cut.Find("#budget").Input("0.2");
-            cut.Find(".set-budget-btn").Click();
+            var cut = await OpenOverBudgetPromptAsync();
 
-            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
             var modal = cut.Find(".modal-box");
             Assert.Contains("Apple", modal.TextContent);
-            Assert.Contains("over your $0.20 budget", modal.TextContent);
+            Assert.Contains("$1.50", modal.TextContent);
+            Assert.Contains("over your $1.00 budget", modal.TextContent);
+            Assert.Equal(3, cut.FindAll(".modal-actions button").Count);   // add anyway / cancel / change budget
         }
 
-        // TC-010
+        // TC-008 || FR5, FR6 || positive, boundary case, adding item that exceeds budget and clicking "Add anyway"
         [Fact]
-        public async Task ChangeBudget_UpdatesBudgetUi()
+        public async Task TC008_ModalAddAnyway_ClosesModalAddsItemAndUpdatesTotal()
         {
-            // Arrange
-            var cut = Render<Home>();
-            // Set initial budget
-            cut.Find("#budget").Input("0.2");
-            await cut.InvokeAsync(() => cut.Find(".set-budget-btn").Click());
+            var cut = await OpenOverBudgetPromptAsync();
 
-            // Act - change the budget to a new value
-            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
-            var button = cut.FindAll(".modal-actions button");
-            await cut.InvokeAsync(() => button[2].Click()); // 3rd button is "Change Budget" in the modal
+            await ClickAsync(cut, ".modal-actions button", 0);   // Add anyway
 
-            // Assert - budget displayed in UI reflects new value, closes modal and cart remains unchanged
-            Assert.Empty(cut.FindAll(".modal-box")); // Modal should be closed
-            Assert.Empty(cut.FindAll(".cart-item-row")); // Cart should remain unchanged
+            Assert.Empty(cut.FindAll(".modal-box"));
+            Assert.Contains("Qty: 3", cut.Find(".cart-item-qty").TextContent);
+            Assert.Contains("$1.50", cut.Find(".total-line-main").TextContent);
         }
 
-        // TC-008
+        // TC-009 | FR5, FR6 | negative
         [Fact]
-        public async Task AddItemExceedingBudget_AddAnyway()
+        public async Task TC009_ModalCancel_ClosesModalAndLeavesCartUnchanged()
         {
-            // Arrange
-            var cut = Render<Home>();
-            cut.Find("#budget").Input("0.02");
-            cut.Find(".set-budget-btn").Click();
-            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
+            var cut = await OpenOverBudgetPromptAsync();
 
-            var button = cut.FindAll(".modal-actions button");
-            await cut.InvokeAsync(() => button[0].Click()); // Click "Add Anyway"
+            await ClickAsync(cut, ".modal-actions button", 1);   // Cancel
 
-            var cartItems = cut.FindAll(".cart-item-row");
-            Assert.Single(cartItems);
+            Assert.Empty(cut.FindAll(".modal-box"));
+            Assert.Contains("Qty: 2", cut.Find(".cart-item-qty").TextContent);
+            Assert.Contains("$1.00", cut.Find(".total-line-main").TextContent);
         }
-        // TC-009
+
+        // TC-010 || FR5, FR6 || positive
         [Fact]
-        public async Task AddItemExceedingBudget_Cancel()
+        public async Task TC010_ModalChangeBudget_ClosesModalLeavesCartAndBudgetEditable()
         {
-            // Arrange
-            var cut = Render<Home>();
-            cut.Find("#budget").Input("0.02");
-            cut.Find(".set-budget-btn").Click();
-            await cut.InvokeAsync(() => cut.Find("button.add-btn").Click());
-            var button = cut.FindAll(".modal-actions button");
-            await cut.InvokeAsync(() => button[1].Click()); // Click "Cancel"
-            var cartItems = cut.FindAll(".cart-item-row");
-            Assert.Empty(cartItems);
+            var cut = await OpenOverBudgetPromptAsync();
+
+            await ClickAsync(cut, ".modal-actions button", 2);   // Change budget
+
+            Assert.Empty(cut.FindAll(".modal-box"));
+            Assert.Contains("Qty: 2", cut.Find(".cart-item-qty").TextContent);
+            Assert.False(cut.Find("#budget").HasAttribute("disabled"));
+
+            await SetBudgetAsync(cut, "5");                      // the user now edits the budget
+            Assert.Contains("$5.00", cut.Find(".budget-amount").TextContent);
         }
 
         // TC-014 (NFR5): dark mode toggle
@@ -156,21 +156,26 @@ namespace MealPrep.Tests
             Assert.True(cut.Find(".text-larger").HasAttribute("disabled"));
         }
 
-        private class FakeItemsHandler : HttpMessageHandler
+        //TC-23 || FR3 || positive (single trip in history)
+        [Fact]
+        public void TC023_SingleTrip_SuggestsThatTripsTotal()
         {
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            var result = Service.GetSuggestedBudget(new List<SpendingRecord> { Trip(1, 12.34m) });
+
+            Assert.Equal(12.34m, result);
+        }
+
+        //TC-24 || FR3 || positive (only use top 5 when multiple trips in history)
+        [Fact]
+        public void TC024_SixTrips_UsesOnlyTheNewestFive()
+        {
+            var history = new List<SpendingRecord>
             {
-                if (request.RequestUri?.AbsolutePath?.EndsWith("/data/items.json") == true || request.RequestUri?.AbsolutePath?.EndsWith("items.json") == true)
-                {
-                    var json = "[{\"Id\":1,\"Name\":\"Apple\",\"Category\":\"Fruit\",\"Prices\":[{\"Supermarket\":\"Generic\",\"Price\":0.5}],\"Emoji\":\"🍎\"}]";
-                    var response = new HttpResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
-                    };
-                    return Task.FromResult(response);
-                }
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
-            }
+                Trip(6, 100m),   // oldest: must be ignored (would make the average 25 if counted)
+                Trip(5, 10m), Trip(4, 10m), Trip(3, 10m), Trip(2, 10m), Trip(1, 10m)
+            };
+
+            Assert.Equal(10.00m, Service.GetSuggestedBudget(history));
         }
     }
 }
