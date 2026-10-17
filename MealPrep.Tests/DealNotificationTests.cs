@@ -7,8 +7,7 @@ using Xunit;
 
 namespace MealPrep.Tests
 {
-    // FR4: notify the user of updated discount deals.
-    // TC-024 to TC-027 test DealNotifier directly. TC-028 to TC-031 go through the page.
+    // This file focuses on testing deal notification related requirements (FR4).
     public class DealNotificationTests : HomeTestBase
     {
         private static readonly DateTime Now = new(2026, 10, 17, 12, 0, 0);

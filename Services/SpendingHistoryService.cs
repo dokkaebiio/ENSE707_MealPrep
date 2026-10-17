@@ -26,7 +26,7 @@ namespace MealPrep.Services
             await _localStorage.SetItemAsync(KeyFor(email), history);
         }
 
-        // Clear history of last N trips for a user
+        // Clear hisall record of spending history for the user.
         public async Task ClearHistoryAsync(string email)
         {
             await _localStorage.RemoveItemAsync(KeyFor(email));
