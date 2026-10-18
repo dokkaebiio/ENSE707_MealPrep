@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
 /* =========================================================
    Base
    ========================================================= */
@@ -44,22 +46,68 @@ body {
     cursor: pointer;
 }
 
+/* Header bar: MealPlan badge on the left; bell, dark mode and text size on the right */
+.app-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+    .app-header .a11y-controls {
+        padding: 0;
+    }
+
+/* Greeting row under the header: "Hi, name" on the left, Logout on the right */
 .top-nav {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 30px;
+    gap: 12px;
+    padding: 4px 16px 16px;
 }
 
 .nav-badge {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
     font-weight: 700;
     background: #2E5B8A;
     color: white;
-    padding: 6px 14px;
+    padding: 8px 20px;
     border-radius: 999px;
+    letter-spacing: 0.01em;
 }
+
+.user-greeting {
+    font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: #222;
+}
+
+.user-greeting-name {
+    font-weight: 600;
+    color: #2E5B8A;
+}
+
+.logout-btn {
+    min-height: 40px;
+    padding: 0 18px;
+    border: 1px solid #2E5B8A;
+    border-radius: 8px;
+    background: white;
+    color: #2E5B8A;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .logout-btn:hover {
+        background: #2E5B8A;
+        color: white;
+    }
 
 .nav-links {
     align-items: center;
@@ -190,6 +238,73 @@ body {
 
 .notif-tag-cart {
     background: #15803D;
+}
+
+/* The bell now sits in the accessibility bar, next to dark mode */
+.a11y-controls .notif-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notif-bell {
+    background: white;
+}
+
+/* Dark mode for the bell and its deals panel */
+.app-root.dark .notif-bell {
+    background: #2A2A2A;
+    border-color: #444444;
+    color: #EAEAEA;
+}
+
+.app-root.dark .notif-panel {
+    background: #1E1E1E;
+    border-color: #333333;
+    color: #EAEAEA;
+}
+
+.app-root.dark .notif-item {
+    background: #262626;
+    border-color: #333333;
+}
+
+    .app-root.dark .notif-item.notif-new {
+        background: #26303B;
+        border-color: #8AB4F8;
+    }
+
+.app-root.dark .notif-item-expiry,
+.app-root.dark .notif-empty,
+.app-root.dark .notif-was {
+    color: #B0B0B0;
+}
+
+.app-root.dark .notif-mark-read {
+    color: #8AB4F8;
+}
+
+.app-root.dark .user-greeting {
+    color: #EAEAEA;
+}
+
+.app-root.dark .user-greeting-name {
+    color: #8AB4F8;
+}
+
+.app-root.dark .logout-btn {
+    background: #2A2A2A;
+    color: #8AB4F8;
+    border-color: #8AB4F8;
+}
+
+    .app-root.dark .logout-btn:hover {
+        background: #8AB4F8;
+        color: #121212;
+    }
+
+.app-root.dark .notif-mark-read:disabled {
+    color: #777777;
 }
 
 .nav-links a {
@@ -1107,7 +1222,7 @@ body {
     padding: 8px 16px;
 }
 
-    .a11y-controls button {
+    .a11y-controls > button {
         min-height: 44px;
         min-width: 44px;
         padding: 0 12px;
@@ -1119,7 +1234,7 @@ body {
         cursor: pointer;
     }
 
-        .a11y-controls button:disabled {
+        .a11y-controls > button:disabled {
             opacity: 0.45;
             cursor: not-allowed;
         }
@@ -1174,7 +1289,7 @@ body:has(.app-root.dark) {
     .app-root.dark input,
     .app-root.dark select,
     .app-root.dark .qty-btn,
-    .app-root.dark .a11y-controls button {
+    .app-root.dark .a11y-controls > button {
         background: #2A2A2A;
         color: #EAEAEA;
         border: 1px solid #444444;
@@ -1867,7 +1982,20 @@ button.saved-recipe-name {
     }
 
     .top-nav {
+        padding: 4px 0 12px;
+    }
+
+    .app-header {
         padding: 12px 0;
+    }
+
+    .nav-badge {
+        font-size: 1.2rem;
+        padding: 6px 16px;
+    }
+
+    .user-greeting {
+        font-size: 1.3rem;
     }
 
     .page-layout {

@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using MealPrep.Services
+@using Microsoft.AspNetCore.Components.Sections
 @inject HttpClient Http
 @inject AuthService Auth
 @inject SpendingHistoryService SpendingHistory
@@ -7,76 +8,86 @@
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
-<div class="top-nav">
-    <span class="nav-badge">MealPlan</span>
-    <nav class="nav-links">
-            <div class="notif-wrapper">
-                @if (DemoMode)
+@* Deal notifications bell: shown in the layout's accessibility bar, right next to
+   the dark mode button (see the SectionOutlet in MainLayout.razor). *@
+<SectionContent SectionName="header-actions">
+    <div class="notif-wrapper">
+        @if (DemoMode)
+        {
+            <button class="demo-btn" @onclick="SimulateDealUpdate">Demo: new deal</button>
+            <button class="demo-btn" @onclick="ResetDealsDemo">Demo: reset</button>
+        }
+        <button class="notif-bell" aria-label="@BellLabel"
+                aria-expanded="@(ShowNotifications ? "true" : "false")"
+                @onclick="ToggleNotifications">
+            🔔
+            @if (UnseenDeals.Count > 0)
+            {
+                <span class="notif-count">@UnseenDeals.Count</span>
+            }
+        </button>
+
+        @if (ShowNotifications)
+        {
+            <div class="notif-panel" role="region" aria-label="Deal notifications">
+                <div class="notif-header">
+                    <strong>Deals</strong>
+                    <button class="notif-mark-read" disabled="@(UnseenDeals.Count == 0)"
+                            @onclick="MarkDealsSeen">
+                        Mark all as read
+                    </button>
+                </div>
+
+                @if (!ActiveDeals.Any())
                 {
-                    <button class="demo-btn" @onclick="SimulateDealUpdate">Demo: new deal</button>
-                    <button class="demo-btn" @onclick="ResetDealsDemo">Demo: reset</button>
+                    <div class="notif-empty">No deals right now.</div>
                 }
-                <button class="notif-bell" aria-label="@BellLabel"
-                        aria-expanded="@(ShowNotifications ? "true" : "false")"
-                        @onclick="ToggleNotifications">
-                    🔔
-                    @if (UnseenDeals.Count > 0)
-                    {
-                        <span class="notif-count">@UnseenDeals.Count</span>
-                    }
-                </button>
 
-                @if (ShowNotifications)
+                @foreach (var deal in ActiveDeals)
                 {
-                    <div class="notif-panel" role="region" aria-label="Deal notifications">
-                        <div class="notif-header">
-                            <strong>Deals</strong>
-                            <button class="notif-mark-read" disabled="@(UnseenDeals.Count == 0)"
-                                    @onclick="MarkDealsSeen">
-                                Mark all as read
-                            </button>
+                    var item = AllItems.FirstOrDefault(i => i.Id == deal.ItemId);
+                    if (item is null) { continue; }
+                    var isNew = IsUnseen(deal);
+
+                    <div class="notif-item @(isNew ? "notif-new" : "")">
+                        <div class="notif-item-title">
+                            @item.Emoji @item.Name
+                            @if (isNew)
+                            {
+                                <span class="notif-tag">New</span>
+                            }
+                            @if (Cart.Any(c => c.Id == deal.ItemId))
+                            {
+                                <span class="notif-tag notif-tag-cart">In your cart</span>
+                            }
                         </div>
-
-                        @if (!ActiveDeals.Any())
-                        {
-                            <div class="notif-empty">No deals right now.</div>
-                        }
-
-                        @foreach (var deal in ActiveDeals)
-                        {
-                            var item = AllItems.FirstOrDefault(i => i.Id == deal.ItemId);
-                            if (item is null) { continue; }
-                            var isNew = IsUnseen(deal);
-
-                            <div class="notif-item @(isNew ? "notif-new" : "")">
-                                <div class="notif-item-title">
-                                    @item.Emoji @item.Name
-                                    @if (isNew)
-                                    {
-                                        <span class="notif-tag">New</span>
-                                    }
-                                    @if (Cart.Any(c => c.Id == deal.ItemId))
-                                    {
-                                        <span class="notif-tag notif-tag-cart">In your cart</span>
-                                    }
-                                </div>
-                                <div class="notif-item-detail">
-                                    $@deal.DealPrice.ToString("F2") at @deal.Supermarket
-                                    @if (RegularPrice(deal) is decimal was)
-                                    {
-                                        <span class="notif-was">$@was.ToString("F2")</span>
-                                    }
-                                </div>
-                                <div class="notif-item-expiry">Ends @deal.ExpiresOn.ToString("ddd d MMM")</div>
-                            </div>
-                        }
+                        <div class="notif-item-detail">
+                            $@deal.DealPrice.ToString("F2") at @deal.Supermarket
+                            @if (RegularPrice(deal) is decimal was)
+                            {
+                                <span class="notif-was">$@was.ToString("F2")</span>
+                            }
+                        </div>
+                        <div class="notif-item-expiry">Ends @deal.ExpiresOn.ToString("ddd d MMM")</div>
                     </div>
                 }
             </div>
+        }
+    </div>
+</SectionContent>
+
+@* The MealPlan badge now lives in the header bar (MainLayout.razor), next to the bell and dark mode. *@
+<div class="top-nav">
+    <div class="user-greeting">
         @if (Auth.CurrentUser is not null)
         {
-            <span>Hi, @Auth.CurrentUser.Name</span>
-            <button @onclick="HandleLogout">Logout</button>
+            <text>Hi, <span class="user-greeting-name">@Auth.CurrentUser.Name</span> 👋</text>
+        }
+    </div>
+    <nav class="nav-links">
+        @if (Auth.CurrentUser is not null)
+        {
+            <button class="logout-btn" @onclick="HandleLogout">Logout</button>
         }
         else
         {
