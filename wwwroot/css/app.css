@@ -1557,6 +1557,161 @@ button.cal-add-btn {
     font-size: 0.85rem;
 }
 
+/* Saved recipes list (under the weekly plan) */
+
+.saved-count {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #666666;
+}
+
+.saved-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.saved-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+button.saved-filter-btn {
+    padding: 4px 12px;
+    border: 1px solid #DDDDDD;
+    border-radius: 999px;
+    background: white;
+    color: #444444;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    button.saved-filter-btn:hover {
+        background: #EAF1F8;
+    }
+
+    button.saved-filter-btn.active {
+        background: #2E5B8A;
+        border-color: #2E5B8A;
+        color: white;
+    }
+
+.saved-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.saved-group-heading {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #666666;
+}
+
+.saved-recipe-card {
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #FAFAFA;
+}
+
+    .saved-recipe-card.past {
+        opacity: 0.75;
+    }
+
+.saved-recipe-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+button.saved-recipe-name {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #222;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+    button.saved-recipe-name:hover {
+        color: #2E5B8A;
+        text-decoration: underline;
+    }
+
+.saved-recipe-total {
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.saved-recipe-meta {
+    font-size: 0.8rem;
+    color: #666666;
+    margin-top: 2px;
+}
+
+.saved-toggle {
+    font-size: 0.8rem;
+}
+
+.saved-recipe-items {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 6px 0 0;
+    border-top: 1px solid #DDDDDD;
+    font-size: 0.85rem;
+}
+
+    .saved-recipe-items li {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 2px 0;
+    }
+
+.app-root.dark .saved-recipe-card {
+    background: #1E1E1E;
+    border-color: #333333;
+}
+
+.app-root.dark button.saved-recipe-name {
+    color: #EAEAEA;
+}
+
+    .app-root.dark button.saved-recipe-name:hover {
+        color: #8AB4F8;
+    }
+
+.app-root.dark button.saved-filter-btn {
+    background: #2A2A2A;
+    color: #EAEAEA;
+    border-color: #444444;
+}
+
+    .app-root.dark button.saved-filter-btn.active {
+        background: #2E5B8A;
+        border-color: #2E5B8A;
+        color: white;
+    }
+
+.app-root.dark .saved-count,
+.app-root.dark .saved-group-heading,
+.app-root.dark .saved-recipe-meta {
+    color: #B0B0B0;
+}
+
+.app-root.dark .saved-recipe-items {
+    border-top-color: #333333;
+}
+
 /* Dark mode for the calendar pieces */
 
 .app-root.dark .calendar-cell {

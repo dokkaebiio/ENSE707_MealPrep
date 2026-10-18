@@ -358,6 +358,83 @@
                 }
             </div>
 
+            <hr class="sidebar-divider" />
+
+            <!-- Saved recipes: every saved grocery list, upcoming, weekly and past -->
+            <div class="saved-recipes-section">
+                <h2>Saved Recipes <span class="saved-count">(@Recipes.Count)</span></h2>
+
+                @if (!Recipes.Any())
+                {
+                    <div class="recipes-empty">No recipes saved yet.</div>
+                }
+                else
+                {
+                    <div class="saved-list">
+                        <div class="saved-filter" role="group" aria-label="Filter saved recipes">
+                            @foreach (var f in SavedFilters)
+                            {
+                                <button class="saved-filter-btn @(SavedFilter == f ? "active" : "")"
+                                        aria-pressed="@(SavedFilter == f ? "true" : "false")"
+                                        @onclick="() => SavedFilter = f">
+                                    @f (@SavedCount(f))
+                                </button>
+                            }
+                        </div>
+
+                        @if (!SavedGroups.Any())
+                        {
+                            <div class="recipes-empty">No @SavedFilter.ToLower() recipes.</div>
+                        }
+
+                        @foreach (var grp in SavedGroups)
+                        {
+                            <div class="saved-group">
+                                <div class="saved-group-heading">@grp.Title</div>
+
+                                @foreach (var recipe in grp.Items)
+                                {
+                                    var expanded = ExpandedRecipes.Contains(recipe.Id);
+
+                                    <div class="saved-recipe-card @(grp.Title == "Past" ? "past" : "")">
+                                        <div class="saved-recipe-top">
+                                            <button class="saved-recipe-name" title="Open recipe"
+                                                    @onclick="() => OpenEditRecipeModal(recipe)">
+                                                @recipe.Name
+                                            </button>
+                                            <span class="saved-recipe-total">$@RecipeTotal(recipe).ToString("F2")</span>
+                                        </div>
+
+                                        <div class="saved-recipe-meta">
+                                            @ScheduleLabel(recipe) · @recipe.Ingredients.Count item(s)
+                                        </div>
+
+                                        <button class="edit-ingredients-btn saved-toggle"
+                                                aria-expanded="@(expanded ? "true" : "false")"
+                                                @onclick="() => ToggleRecipeItems(recipe.Id)">
+                                            @(expanded ? "Hide items" : "Show items")
+                                        </button>
+
+                                        @if (expanded)
+                                        {
+                                            <ul class="saved-recipe-items">
+                                                @foreach (var line in recipe.Ingredients)
+                                                {
+                                                    <li>
+                                                        <span>@line.Name × @line.Qty</span>
+                                                        <span>$@((line.UnitPrice * line.Qty).ToString("F2"))</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
         </div>
     </aside>
 
@@ -1240,6 +1317,62 @@
         EditingIngredients = true;
 
         ShowRecipeModal = true;
+    }
+
+    // ---------- Saved recipes list (under the weekly plan) ----------
+    // Every saved recipe in one place, grouped as Upcoming, Weekly and Past.
+
+    private static readonly string[] SavedFilters = { "All", "Upcoming", "Weekly", "Past" };
+    private string SavedFilter = "All";
+    private HashSet<Guid> ExpandedRecipes = new();   // recipes whose item list is open
+
+    // One-off recipes from today onwards, soonest first.
+    private List<Recipe> UpcomingRecipes =>
+        Recipes.Where(r => r.Date.HasValue && r.Date.Value.Date >= DateTime.Today)
+               .OrderBy(r => r.Date).ThenBy(r => r.Name).ToList();
+
+    // Repeating recipes (no date), Monday to Sunday; unscheduled ones last.
+    private List<Recipe> WeeklyRecipes =>
+        Recipes.Where(r => r.Date is null)
+               .OrderBy(r => r.Day is null ? 7 : WeekOrder(r.Day.Value)).ThenBy(r => r.Name).ToList();
+
+    // One-off recipes before today, most recent first.
+    private List<Recipe> PastRecipes =>
+        Recipes.Where(r => r.Date.HasValue && r.Date.Value.Date < DateTime.Today)
+               .OrderByDescending(r => r.Date).ThenBy(r => r.Name).ToList();
+
+    private int SavedCount(string filter) => filter switch
+    {
+        "Upcoming" => UpcomingRecipes.Count,
+        "Weekly" => WeeklyRecipes.Count,
+        "Past" => PastRecipes.Count,
+        _ => Recipes.Count
+    };
+
+    // The groups shown for the current filter, leaving out empty ones.
+    private List<(string Title, List<Recipe> Items)> SavedGroups
+    {
+        get
+        {
+            var groups = new List<(string Title, List<Recipe> Items)>();
+            if (SavedFilter is "All" or "Upcoming") groups.Add(("Upcoming", UpcomingRecipes));
+            if (SavedFilter is "All" or "Weekly") groups.Add(("Weekly", WeeklyRecipes));
+            if (SavedFilter is "All" or "Past") groups.Add(("Past", PastRecipes));
+            return groups.Where(g => g.Items.Any()).ToList();
+        }
+    }
+
+    private static string ScheduleLabel(Recipe r) =>
+        r.Date.HasValue ? $"📅 {r.Date.Value:ddd d MMM yyyy}" :
+        r.Day.HasValue ? $"↻ Every {r.Day}" :
+        "Not scheduled";
+
+    private static decimal RecipeTotal(Recipe r) => r.Ingredients.Sum(i => i.UnitPrice * i.Qty);
+
+    private void ToggleRecipeItems(Guid id)
+    {
+        if (!ExpandedRecipes.Add(id))
+            ExpandedRecipes.Remove(id);
     }
 
     private void OpenCreateRecipeModal()
