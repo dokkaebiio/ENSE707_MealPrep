@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+/* =========================================================
+   Base
+   ========================================================= */
+
 * {
     box-sizing: border-box;
 }
@@ -10,43 +16,312 @@ body {
     width: 100%;
     margin: 0 auto;
     padding: 0 20px;
-    box-sizing: border-box;
 }
 
+#blazor-error-ui {
+    display: none;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+/* =========================================================
+   Top navigation
+   ========================================================= */
+
+.demo-btn {
+    min-height: 44px;
+    padding: 0 12px;
+    background: #FEF9C3;
+    color: #A16207;
+    border: 1px dashed #A16207;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Header bar: MealPlan badge on the left; bell, dark mode and text size on the right */
+.app-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+    .app-header .a11y-controls {
+        padding: 0;
+    }
+
+/* Greeting row under the header: "Hi, name" on the left, Logout on the right */
 .top-nav {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 30px;
+    gap: 12px;
+    padding: 4px 16px 16px;
 }
 
-/* Top Nav Stylings */
 .nav-badge {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
     font-weight: 700;
     background: #2E5B8A;
     color: white;
-    padding: 6px 14px;
+    padding: 8px 20px;
     border-radius: 999px;
+    letter-spacing: 0.01em;
 }
 
-.nav-links {
-    display: flex;
-    gap: 10px;
+.user-greeting {
+    font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: #222;
 }
 
-    .nav-links a {
-        padding: 8px 14px;
-        border-radius: 6px;
-        text-decoration: none;
-        color: #222;
-        font-weight: 600;
+.user-greeting-name {
+    font-weight: 600;
+    color: #2E5B8A;
+}
+
+.logout-btn {
+    min-height: 40px;
+    padding: 0 18px;
+    border: 1px solid #2E5B8A;
+    border-radius: 8px;
+    background: white;
+    color: #2E5B8A;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .logout-btn:hover {
+        background: #2E5B8A;
+        color: white;
     }
 
-        .nav-links a:hover {
-            background: #EAF1F8;
-        }
+.nav-links {
+    align-items: center;
+}
+
+.notif-wrapper {
+    position: relative;
+}
+
+.notif-bell {
+    position: relative;
+    min-width: 44px;
+    min-height: 44px;
+    background: none;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.notif-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    background: #B91C1C;
+    color: white;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+}
+
+.notif-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: min(340px, 90vw);
+    max-height: 420px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #DDDDDD;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    z-index: 1500;
+}
+
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.notif-mark-read {
+    background: none;
+    border: none;
+    color: #2E5B8A;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: underline;
+    min-height: 44px;
+    cursor: pointer;
+}
+
+    .notif-mark-read:disabled {
+        color: #999999;
+        text-decoration: none;
+        cursor: not-allowed;
+    }
+
+.notif-item {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: #FAFAFA;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+}
+
+    .notif-item.notif-new {
+        background: #EAF1F8;
+        border-color: #2E5B8A;
+    }
+
+.notif-item-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.notif-item-detail {
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+.notif-item-expiry {
+    font-size: 0.75rem;
+    color: #666666;
+    margin-top: 2px;
+}
+
+.notif-empty {
+    font-size: 0.85rem;
+    color: #666666;
+    padding: 8px 0;
+}
+
+.notif-was {
+    margin-left: 6px;
+    font-size: 0.75rem;
+    color: #777777;
+    text-decoration: line-through;
+}
+
+.notif-tag {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 8px;
+    background: #2E5B8A;
+    color: white;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.notif-tag-cart {
+    background: #15803D;
+}
+
+/* The bell now sits in the accessibility bar, next to dark mode */
+.a11y-controls .notif-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notif-bell {
+    background: white;
+}
+
+/* Dark mode for the bell and its deals panel */
+.app-root.dark .notif-bell {
+    background: #2A2A2A;
+    border-color: #444444;
+    color: #EAEAEA;
+}
+
+.app-root.dark .notif-panel {
+    background: #1E1E1E;
+    border-color: #333333;
+    color: #EAEAEA;
+}
+
+.app-root.dark .notif-item {
+    background: #262626;
+    border-color: #333333;
+}
+
+    .app-root.dark .notif-item.notif-new {
+        background: #26303B;
+        border-color: #8AB4F8;
+    }
+
+.app-root.dark .notif-item-expiry,
+.app-root.dark .notif-empty,
+.app-root.dark .notif-was {
+    color: #B0B0B0;
+}
+
+.app-root.dark .notif-mark-read {
+    color: #8AB4F8;
+}
+
+.app-root.dark .user-greeting {
+    color: #EAEAEA;
+}
+
+.app-root.dark .user-greeting-name {
+    color: #8AB4F8;
+}
+
+.app-root.dark .logout-btn {
+    background: #2A2A2A;
+    color: #8AB4F8;
+    border-color: #8AB4F8;
+}
+
+    .app-root.dark .logout-btn:hover {
+        background: #8AB4F8;
+        color: #121212;
+    }
+
+.app-root.dark .notif-mark-read:disabled {
+    color: #777777;
+}
+
+.nav-links a {
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #222;
+    font-weight: 600;
+}
+
+    .nav-links a:hover {
+        background: #EAF1F8;
+    }
+
+/* =========================================================
+   Page layout
+   ========================================================= */
 
 .page-layout {
     display: flex;
@@ -80,15 +355,24 @@ body {
     margin: 18px 0;
 }
 
-.budget-planner,
-.cart-summary {
-    background: white;
-    border: 1px solid #DDDDDD;
-    border-radius: 10px;
-    padding: 18px;
+/* =========================================================
+   Search + item cards
+   ========================================================= */
+
+.location-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
-/* Search box and input styles */
+    .location-select-row select {
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
 .search-row {
     display: flex;
     gap: 10px;
@@ -100,8 +384,7 @@ body {
 
 .search-box {
     flex: 2;
-    padding: 8px 10px;
-    padding-top: 10px;
+    padding: 10px 10px 8px;
     border: 1px solid #DDDDDD;
     border-radius: 6px;
     font-size: 1rem;
@@ -125,7 +408,6 @@ body {
     border-radius: 999px;
 }
 
-/* Search result style */
 .Search-results {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -134,6 +416,13 @@ body {
     background: #F4F4F0;
     padding: 20px;
     border-radius: 10px;
+}
+
+.empty-msg {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #666666;
+    padding: 16px 0;
 }
 
 .item-card {
@@ -162,8 +451,47 @@ body {
     margin-bottom: 10px;
 }
 
+.cheapest-badge {
+    display: inline-block;
+    margin-left: 6px;
+    background: #22c55e;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.compare-link {
+    background: none;
+    border: none;
+    color: #2E5B8A;
+    font-size: 0.75rem;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 2px 0;
+}
+
+.price-comparison {
+    margin-top: 6px;
+    width: 100%;
+    border: 1px solid #DDDDDD;
+    border-radius: 6px;
+    padding: 6px 10px;
+    background: #FAFAFA;
+}
+
+.price-comparison-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    padding: 2px 0;
+}
+
 .item-actions {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
     gap: 6px;
 }
@@ -188,6 +516,23 @@ body {
     font-weight: 600;
 }
 
+.qty-input {
+    width: 52px;
+    height: 36px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid #DDDDDD;
+    border-radius: 6px;
+    -moz-appearance: textfield;
+}
+
+    .qty-input::-webkit-outer-spin-button,
+    .qty-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
 .add-btn {
     background: #2E5B8A;
     color: white;
@@ -203,6 +548,198 @@ body {
         opacity: 0.9;
     }
 
+/* =========================================================
+   Budget planner
+   ========================================================= */
+
+.budget-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+    .budget-inputs label {
+        white-space: nowrap;
+    }
+
+    .budget-inputs input#budget {
+        flex: 1 1 90px;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
+.set-budget-btn,
+.use-suggestion-btn {
+    background: #2E5B8A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    min-width: 110px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+    .set-budget-btn:hover,
+    .use-suggestion-btn:hover {
+        opacity: 0.9;
+    }
+
+/* Suggested budget (FR3) - a card nested inside the planner.
+   Negative side margins let the card's border sit in the parent's padding,
+   so its content lines up with the input row and status row. */
+
+.suggested-card {
+    margin: 0 -13px 20px;
+    padding: 12px;
+    background: #F8FAFC;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+}
+
+.suggested-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2E5B8A;
+}
+
+.suggested-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0;
+}
+
+.suggested-amount {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.suggested-basis {
+    font-size: 0.75rem;
+    color: #777777;
+}
+
+.suggested-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.reset-history-btn {
+    background: none;
+    border: none;
+    color: #B02A2A;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+}
+
+    .reset-history-btn:hover {
+        opacity: 0.8;
+    }
+
+/* Budget summary: budget line + status badge, progress bar */
+
+.budget-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 110px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+    .status-badge.status-none {
+        background: #DBEAFE;
+        color: #1D4ED8;
+    }
+
+    .status-badge.status-good {
+        background: #DCFCE7;
+        color: #15803D;
+    }
+
+    .status-badge.status-warning {
+        background: #FEF9C3;
+        color: #A16207;
+    }
+
+    .status-badge.status-danger,
+    .status-badge.status-reached {
+        background: #FEE2E2;
+        color: #B91C1C;
+    }
+
+    .status-badge.status-over {
+        background: #B91C1C;
+        color: white;
+    }
+
+.progress-track {
+    width: 100%;
+    height: 10px;
+    background: #E5E7EB;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+    .progress-fill.budget-none {
+        background: #3b82f6;
+    }
+
+    .progress-fill.budget-good {
+        background: #22c55e;
+    }
+
+    .progress-fill.budget-warning {
+        background: #eab308;
+    }
+
+    .progress-fill.budget-danger,
+    .progress-fill.budget-reached {
+        background: #ef4444;
+    }
+
+    .progress-fill.budget-over {
+        background: #7f1d1d;
+    }
+
+/* =========================================================
+   Cart
+   ========================================================= */
+
 .cart-items {
     display: flex;
     flex-direction: column;
@@ -210,9 +747,10 @@ body {
     margin: 12px 0;
 }
 
+/* 3 columns: item info | qty controls | remove button */
 .cart-item-row {
     display: grid;
-    grid-template-columns: 36px 1fr 50px 28px;
+    grid-template-columns: 1fr auto 44px;
     align-items: center;
     gap: 8px;
     border: 1px solid #DDDDDD;
@@ -221,11 +759,20 @@ body {
     background: #FAFAFA;
 }
 
-    .cart-item-row .item-emoji {
-        font-size: 1.6rem;
-        text-align: center;
-        margin-bottom: 0;
-    }
+.cart-item-qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
 
 .cart-item-info .item-name {
     font-size: 0.9rem;
@@ -250,39 +797,83 @@ body {
     cursor: pointer;
 }
 
-#blazor-error-ui {
-    display: none;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
-    position: fixed;
+.cart-supermarket-comparison {
+    margin: 12px 0;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #FAFAFA;
+}
+
+.cart-supermarket-comparison-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #444444;
+    margin-bottom: 6px;
+}
+
+.supermarket-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    padding: 3px 0;
+}
+
+    .supermarket-total-row.best-market {
+        font-weight: 700;
+        color: #1E7B34;
+    }
+
+.total-line-main {
+    font-weight: 600;
+}
+
+.total-line-sub {
+    font-size: 0.8rem;
+    color: #666666;
+    margin-top: 2px;
+}
+
+.create-recipe-btn,
+.finish-shopping-btn {
     width: 100%;
-    z-index: 1000;
+    margin-top: 8px;
+    background: #2E5B8A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
-.budget-summary.budget-none {
-    border-left: 4px solid #3b82f6;
+.finish-shopping-btn {
+    margin-top: 12px;
 }
 
-.budget-summary.budget-good {
-    border-left: 4px solid #22c55e;
-}
+    .create-recipe-btn:hover:not(:disabled),
+    .finish-shopping-btn:hover:not(:disabled) {
+        opacity: 0.9;
+    }
 
-.budget-summary.budget-warning {
-    border-left: 4px solid #eab308;
-}
+    .create-recipe-btn:disabled,
+    .finish-shopping-btn:disabled {
+        background: #CCCCCC;
+        cursor: not-allowed;
+    }
 
-.budget-summary.budget-danger {
-    border-left: 4px solid #ef4444;
-}
+/* =========================================================
+   Modals (over-budget prompt + recipe)
+   ========================================================= */
 
 .modal-overlay {
     position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -302,87 +893,66 @@ body {
     margin-top: 1rem;
 }
 
-.budget-inputs {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-    .budget-inputs input#budget {
-        flex: 1;
-        padding: 8px 10px;
-        border: 1px solid #DDDDDD;
+    .modal-actions button {
+        background: #2E5B8A;
+        color: white;
+        border: none;
         border-radius: 6px;
-        font-size: 1rem;
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
     }
 
-.set-budget-btn {
-    background: #2E5B8A;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-}
+        .modal-actions button:hover {
+            opacity: 0.9;
+        }
 
-    .set-budget-btn:hover {
-        opacity: 0.9;
-    }
-
-.modal-actions button {
-    background: #2E5B8A;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-    .modal-actions button:hover {
-        opacity: 0.9;
-    }
-
-/* --- Create Recipe button --- */
-
-.create-recipe-btn {
-    width: 100%;
-    margin-top: 12px;
-    background: #2E5B8A;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-    .create-recipe-btn:hover:not(:disabled) {
-        opacity: 0.9;
-    }
-
-    .create-recipe-btn:disabled {
-        background: #CCCCCC;
-        cursor: not-allowed;
-    }
-
-/* --- Saved recipes list --- */
+/* =========================================================
+   Recipes / weekly meal plan
+   ========================================================= */
 
 .recipes-empty {
     font-size: 0.85rem;
     color: #666666;
 }
 
-.recipe-list {
+/* One group per weekday, Monday to Sunday */
+.recipe-week {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     margin-top: 8px;
+}
+
+.recipe-day-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 10px;
+    border-left: 3px solid #DDDDDD;
+}
+
+    /* Today's group gets the brand-blue accent */
+    .recipe-day-group.today {
+        border-left-color: #2E5B8A;
+    }
+
+.recipe-day-heading {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2E5B8A;
+}
+
+.recipe-day-group.today .recipe-day-heading::after {
+    content: " (today)";
+    font-weight: 400;
+    color: #666666;
+}
+
+.recipe-day-empty {
+    font-size: 0.85rem;
+    color: #999999;
 }
 
 .recipe-card {
@@ -403,24 +973,21 @@ body {
     font-size: 0.95rem;
 }
 
-.recipe-card-date {
-    font-size: 0.8rem;
-    color: #2E5B8A;
-    margin-top: 2px;
-}
-
 .recipe-card-count {
     font-size: 0.75rem;
     color: #666666;
     margin-top: 2px;
 }
 
-/* --- Recipe modal --- */
-
 .recipe-modal-box {
-    max-width: 380px;
+    max-width: 560px;
     width: 100%;
+    padding: 2rem;
 }
+
+    .recipe-modal-box .recipe-ingredients-preview ul {
+        max-height: 260px;
+    }
 
 .recipe-form-field {
     display: flex;
@@ -429,28 +996,25 @@ body {
     margin-bottom: 12px;
 }
 
-    .recipe-form-field label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #444444;
-    }
-
-    .recipe-form-field input {
-        padding: 8px 10px;
-        border: 1px solid #DDDDDD;
-        border-radius: 6px;
-        font-size: 1rem;
-    }
-
-.recipe-ingredients-preview {
-    margin-bottom: 12px;
-}
-
+    .recipe-form-field label,
     .recipe-ingredients-preview label {
         font-size: 0.85rem;
         font-weight: 600;
         color: #444444;
     }
+
+    .recipe-form-field input,
+    .recipe-form-field select {
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+        background: white;
+    }
+
+.recipe-ingredients-preview {
+    margin-bottom: 12px;
+}
 
     .recipe-ingredients-preview ul {
         list-style: disc;
@@ -460,6 +1024,98 @@ body {
         overflow-y: auto;
         font-size: 0.85rem;
         color: #333333;
+    }
+
+/* Editing a saved recipe's ingredients */
+
+.recipe-ingredients-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-ingredients-btn {
+    background: none;
+    border: none;
+    color: #2E5B8A;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+    .edit-ingredients-btn:hover {
+        opacity: 0.8;
+    }
+
+    /* Pencil icon version (Edit ingredients): plain grey, no brand colour */
+    .edit-ingredients-btn.icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 6px;
+        border-radius: 6px;
+        color: #555555;
+        line-height: 1;
+        text-decoration: none;
+    }
+
+        .edit-ingredients-btn.icon-btn:hover {
+            background: #EAF1F8;
+            opacity: 1;
+        }
+
+.ingredient-edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 3 columns: name | qty controls | remove button (same as cart rows) */
+.ingredient-edit-row {
+    display: grid;
+    grid-template-columns: 1fr auto 44px;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    padding: 6px 10px;
+    background: #FAFAFA;
+}
+
+.ingredient-edit-name {
+    font-size: 0.9rem;
+}
+
+.ingredient-edit-empty {
+    font-size: 0.85rem;
+    color: #666666;
+}
+
+.ingredient-add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+    .ingredient-add-row select {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+        background: white;
+    }
+
+    .ingredient-add-row .add-btn:disabled {
+        background: #CCCCCC;
+        cursor: not-allowed;
     }
 
 .recipe-error {
@@ -472,6 +1128,922 @@ body {
     background: #B02A2A;
 }
 
-    .recipe-modal-actions button.danger-btn:hover {
+/* =========================================================
+   Auth pages (Login / Signup)
+   ========================================================= */
+
+.auth-form {
+    max-width: 360px;
+    margin: 24px auto 0;
+    background: white;
+    border: 1px solid #DDDDDD;
+    border-radius: 10px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+    .auth-form label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #444444;
+        margin-top: 12px;
+    }
+
+    .auth-form input {
+        padding: 8px 10px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
+    .auth-form button {
+        margin-top: 20px;
+        background: #2E5B8A;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .auth-form button:hover {
+            opacity: 0.9;
+        }
+
+.auth-switch-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: #666666;
+}
+
+    .auth-switch-link a {
+        color: #2E5B8A;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+        .auth-switch-link a:hover {
+            text-decoration: underline;
+        }
+
+/* =========================================================
+   Accessibility: text size (NFR5)
+   All font sizes above are in rem, which is relative to <html>,
+   so the text level is applied to the root element.
+   ========================================================= */
+
+:root {
+    font-size: 16px;
+}
+
+    :root:has(.app-root.text-1) {
+        font-size: 18px;
+    }
+
+    :root:has(.app-root.text-2) {
+        font-size: 20px;
+    }
+
+.app-root button,
+.app-root input,
+.app-root select {
+    font-size: inherit;
+}
+
+.a11y-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 8px 16px;
+}
+
+    .a11y-controls > button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0 12px;
+        border: 1px solid #DDDDDD;
+        border-radius: 6px;
+        background: white;
+        color: #222;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .a11y-controls > button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+/* =========================================================
+   Accessibility: dark mode (NFR5)
+   Primary (blue) buttons keep their colour; only neutral
+   surfaces, text and inputs are restyled.
+   ========================================================= */
+
+body:has(.app-root.dark) {
+    background: #121212;
+}
+
+.app-root.dark {
+    color: #EAEAEA;
+}
+
+    .app-root.dark .sidebar-card,
+    .app-root.dark .item-card,
+    .app-root.dark .modal-box,
+    .app-root.dark .cart-item-row,
+    .app-root.dark .recipe-card,
+    .app-root.dark .suggested-card,
+    .app-root.dark .price-comparison,
+    .app-root.dark .cart-supermarket-comparison,
+    .app-root.dark .search-row,
+    .app-root.dark .Search-results {
+        background: #1E1E1E;
+        color: #EAEAEA;
+        border-color: #333333;
+    }
+
+        .app-root.dark .recipe-card:hover {
+            background: #26303B;
+        }
+
+    .app-root.dark .ingredient-edit-row {
+        background: #1E1E1E;
+        color: #EAEAEA;
+        border-color: #333333;
+    }
+
+    .app-root.dark .edit-ingredients-btn {
+        color: #8AB4F8;
+    }
+
+    .app-root.dark .ingredient-edit-empty {
+        color: #B0B0B0;
+    }
+
+    .app-root.dark input,
+    .app-root.dark select,
+    .app-root.dark .qty-btn,
+    .app-root.dark .a11y-controls > button {
+        background: #2A2A2A;
+        color: #EAEAEA;
+        border: 1px solid #444444;
+    }
+
+    .app-root.dark .nav-links a,
+    .app-root.dark .recipe-ingredients-preview ul {
+        color: #EAEAEA;
+    }
+
+        .app-root.dark .nav-links a:hover {
+            background: #2A2A2A;
+        }
+
+    .app-root.dark .item-price,
+    .app-root.dark .empty-msg,
+    .app-root.dark .cart-item-qty,
+    .app-root.dark .total-line-sub,
+    .app-root.dark .recipes-empty,
+    .app-root.dark .recipe-card-count,
+    .app-root.dark .recipe-day-empty,
+    .app-root.dark .recipe-day-group.today .recipe-day-heading::after,
+    .app-root.dark .suggested-basis,
+    .app-root.dark .cart-supermarket-comparison-title,
+    .app-root.dark .recipe-form-field label,
+    .app-root.dark .recipe-ingredients-preview label {
+        color: #B0B0B0;
+    }
+
+    .app-root.dark .compare-link,
+    .app-root.dark .suggested-label,
+    .app-root.dark .recipe-day-heading,
+    .app-root.dark a {
+        color: #8AB4F8;
+    }
+
+    .app-root.dark .recipe-day-group {
+        border-left-color: #333333;
+    }
+
+        .app-root.dark .recipe-day-group.today {
+            border-left-color: #8AB4F8;
+        }
+
+    .app-root.dark .remove-btn,
+    .app-root.dark .reset-history-btn,
+    .app-root.dark .recipe-error {
+        color: #F28B82;
+    }
+
+    .app-root.dark .sidebar-divider {
+        border-top-color: #333333;
+    }
+
+    .app-root.dark .auth-form {
+        background: #1E1E1E;
+        border-color: #333333;
+    }
+
+        .app-root.dark .auth-form label,
+        .app-root.dark .auth-switch-link {
+            color: #B0B0B0;
+        }
+
+/* =========================================================
+   Collapsible sidebar sections (Budget Planner, Cart,
+   Weekly Meal Plan, Saved Recipes)
+   ========================================================= */
+
+.section-heading {
+    margin: 0 0 12px;
+}
+
+button.section-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+    button.section-toggle:focus-visible {
+        outline: 3px solid #8AB4F8;
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+.section-title {
+    flex: 1;
+}
+
+/* Key number shown next to a folded heading (e.g. cart total) */
+.section-summary {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666666;
+    white-space: nowrap;
+}
+
+.section-chevron {
+    flex-shrink: 0;
+    color: #555555;
+    transition: transform 0.2s ease;
+}
+
+    .section-chevron.collapsed {
+        transform: rotate(-90deg);
+    }
+
+/* A folded section only shows its heading, so drop the gap under it */
+.section-heading:has(.section-chevron.collapsed) {
+    margin-bottom: 0;
+}
+
+.app-root.dark .section-summary {
+    color: #B0B0B0;
+}
+
+.app-root.dark .section-chevron {
+    color: #B0B0B0;
+}
+
+/* =========================================================
+   Meal calendar: sticky button, month view, date picker
+   Button rules use "button.x" so they win over
+   ".app-root button { font-size: inherit; }" above.
+   ========================================================= */
+
+/* Leave room at the bottom so the sticky button never covers content */
+.page-layout {
+    margin-bottom: 88px;
+}
+
+button.calendar-fab {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border: none;
+    border-radius: 50%;
+    background: #2E5B8A;
+    color: white;
+    font-size: 1.5rem;
+    line-height: 1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    z-index: 1800; /* above the page and deal panel, below modals */
+}
+
+    button.calendar-fab:hover {
         opacity: 0.9;
     }
+
+    button.calendar-fab:focus-visible {
+        outline: 3px solid #8AB4F8;
+        outline-offset: 2px;
+    }
+
+/* Month view */
+
+.calendar-modal-box {
+    max-width: 900px;
+    width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.calendar-title {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+button.calendar-nav-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    background: #F5F5F5;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+    button.calendar-nav-btn:hover {
+        background: #E8E8E8;
+    }
+
+.calendar-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 12px;
+    font-size: 0.85rem;
+}
+
+.calendar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+    .calendar-toggle input {
+        min-height: 0;
+    }
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.calendar-weekday {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #666666;
+    text-align: center;
+    padding: 4px 0;
+}
+
+.calendar-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    min-height: 90px;
+    padding: 4px;
+    border: 1px solid #DDDDDD;
+    border-radius: 6px;
+    background: white;
+}
+
+    .calendar-cell.other-month {
+        background: #F4F4F0;
+        opacity: 0.6;
+    }
+
+    .calendar-cell.today {
+        border: 2px solid #2E5B8A;
+    }
+
+/* The whole day opens "New Recipe" */
+.calendar-cell {
+    cursor: pointer;
+}
+
+    .calendar-cell:hover {
+        background: #EAF1F8;
+    }
+
+    .calendar-cell:focus-visible {
+        outline: 3px solid #8AB4F8;
+        outline-offset: 1px;
+    }
+
+.calendar-date-num {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.calendar-cell.today .calendar-date-num {
+    color: #2E5B8A;
+}
+
+button.cal-chip {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 4px;
+    background: #2E5B8A;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+    button.cal-chip:hover {
+        opacity: 0.85;
+    }
+
+button.cal-chip-weekly {
+    background: #EAF1F8;
+    color: #2E5B8A;
+    font-weight: 500;
+}
+
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: #666666;
+}
+
+.legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+
+.legend-dated {
+    background: #2E5B8A;
+}
+
+.legend-weekly {
+    background: #EAF1F8;
+    border: 1px solid #2E5B8A;
+}
+
+/* Day + calendar icon in the recipe popup */
+
+.recipe-day-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+    .recipe-day-row select {
+        flex: 1;
+        min-width: 0;
+    }
+
+        .recipe-day-row select:disabled {
+            background: #F4F4F0;
+            color: #666666;
+            cursor: not-allowed;
+        }
+
+button.calendar-icon-btn {
+    flex-shrink: 0;
+    width: 42px;
+    border: 1px solid #DDDDDD;
+    border-radius: 6px;
+    background: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+    button.calendar-icon-btn:hover {
+        background: #EAF1F8;
+    }
+
+    button.calendar-icon-btn.active {
+        background: #EAF1F8;
+        border-color: #2E5B8A;
+    }
+
+.recipe-date-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+    .recipe-date-row input {
+        flex: 1;
+        min-width: 0;
+    }
+
+.recipe-date-hint {
+    font-size: 0.75rem;
+    color: #666666;
+}
+
+/* "Repeat every week" tick box in the recipe popup */
+.recipe-weekly-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+.recipe-form-field .recipe-weekly-toggle input {
+    width: 18px;
+    height: 18px;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    accent-color: #2E5B8A;
+    cursor: pointer;
+}
+
+button.calendar-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Weekly plan: date on dated recipes, and the "other dates" note */
+
+.recipe-card-date {
+    font-size: 0.8rem;
+    color: #2E5B8A;
+    margin-top: 2px;
+}
+
+.recipe-other-dates {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 10px;
+    background: #EAF1F8;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+/* Saved recipes list (under the weekly plan) */
+
+.saved-count {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #666666;
+}
+
+.saved-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.saved-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+button.saved-filter-btn {
+    padding: 4px 12px;
+    border: 1px solid #DDDDDD;
+    border-radius: 999px;
+    background: white;
+    color: #444444;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    button.saved-filter-btn:hover {
+        background: #EAF1F8;
+    }
+
+    button.saved-filter-btn.active {
+        background: #2E5B8A;
+        border-color: #2E5B8A;
+        color: white;
+    }
+
+.saved-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.saved-group-heading {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #666666;
+}
+
+.saved-recipe-card {
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #FAFAFA;
+}
+
+    .saved-recipe-card.past {
+        opacity: 0.75;
+    }
+
+.saved-recipe-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+button.saved-recipe-name {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #222;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+    button.saved-recipe-name:hover {
+        color: #2E5B8A;
+        text-decoration: underline;
+    }
+
+.saved-recipe-total {
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.saved-recipe-meta {
+    font-size: 0.8rem;
+    color: #666666;
+    margin-top: 2px;
+}
+
+.saved-toggle {
+    font-size: 0.8rem;
+}
+
+.saved-recipe-items {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 6px 0 0;
+    border-top: 1px solid #DDDDDD;
+    font-size: 0.85rem;
+}
+
+    .saved-recipe-items li {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 2px 0;
+    }
+
+.app-root.dark .saved-recipe-card {
+    background: #1E1E1E;
+    border-color: #333333;
+}
+
+.app-root.dark button.saved-recipe-name {
+    color: #EAEAEA;
+}
+
+    .app-root.dark button.saved-recipe-name:hover {
+        color: #8AB4F8;
+    }
+
+.app-root.dark button.saved-filter-btn {
+    background: #2A2A2A;
+    color: #EAEAEA;
+    border-color: #444444;
+}
+
+    .app-root.dark button.saved-filter-btn.active {
+        background: #2E5B8A;
+        border-color: #2E5B8A;
+        color: white;
+    }
+
+.app-root.dark .saved-count,
+.app-root.dark .saved-group-heading,
+.app-root.dark .saved-recipe-meta {
+    color: #B0B0B0;
+}
+
+.app-root.dark .saved-recipe-items {
+    border-top-color: #333333;
+}
+
+/* Dark mode for the calendar pieces */
+
+.app-root.dark .calendar-cell {
+    background: #1E1E1E;
+    border-color: #333333;
+}
+
+    .app-root.dark .calendar-cell.other-month {
+        background: #161616;
+    }
+
+    .app-root.dark .calendar-cell.today {
+        border-color: #8AB4F8;
+    }
+
+        .app-root.dark .calendar-cell.today .calendar-date-num,
+        .app-root.dark .recipe-card-date {
+            color: #8AB4F8;
+        }
+
+.app-root.dark button.cal-chip-weekly {
+    background: #26303B;
+    color: #8AB4F8;
+}
+
+.app-root.dark .calendar-weekday,
+.app-root.dark .calendar-legend,
+.app-root.dark .recipe-date-hint {
+    color: #B0B0B0;
+}
+
+.app-root.dark button.calendar-nav-btn,
+.app-root.dark button.calendar-icon-btn {
+    background: #2A2A2A;
+    color: #EAEAEA;
+    border-color: #444444;
+}
+
+    .app-root.dark button.calendar-icon-btn.active {
+        background: #26303B;
+        border-color: #8AB4F8;
+    }
+
+.app-root.dark .recipe-day-row select:disabled {
+    background: #1A1A1A;
+    color: #888888;
+}
+
+.app-root.dark .recipe-other-dates {
+    background: #26303B;
+}
+
+.app-root.dark .calendar-cell:hover {
+    background: #26303B;
+}
+
+.app-root.dark .edit-ingredients-btn.icon-btn {
+    color: #B0B0B0;
+}
+
+    .app-root.dark .edit-ingredients-btn.icon-btn:hover {
+        background: #2A2A2A;
+        color: #EAEAEA;
+    }
+
+.app-root.dark .recipe-form-field .recipe-weekly-toggle input {
+    accent-color: #8AB4F8;
+}
+
+.app-root.dark .legend-weekly {
+    background: #26303B;
+    border-color: #8AB4F8;
+}
+
+@media (max-width: 768px) {
+    button.calendar-fab {
+        right: 16px;
+        bottom: 16px;
+    }
+
+    .calendar-grid {
+        gap: 2px;
+    }
+
+    .calendar-cell {
+        min-height: 64px;
+        padding: 2px;
+    }
+
+    button.cal-chip {
+        font-size: 0.6rem;
+        padding: 1px 3px;
+    }
+}
+
+/* =========================================================
+   Responsive layout (NFR2)
+   ========================================================= */
+
+@media (max-width: 768px) {
+    body {
+        padding: 0 12px;
+    }
+
+    .top-nav {
+        padding: 4px 0 12px;
+    }
+
+    .app-header {
+        padding: 12px 0;
+    }
+
+    .nav-badge {
+        font-size: 1.2rem;
+        padding: 6px 16px;
+    }
+
+    .user-greeting {
+        font-size: 1.3rem;
+    }
+
+    .page-layout {
+        flex-direction: column; /* sidebar stacks under the items */
+        align-items: stretch;
+    }
+
+        .page-layout > * {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+    .Search-results {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .search-row {
+        flex-wrap: wrap;
+        padding: 12px;
+    }
+
+    .search-box {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .cart-item-row {
+        grid-template-columns: 1fr auto 44px;
+    }
+
+    .modal-box {
+        width: 92vw;
+        max-width: 92vw;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+        .modal-actions button {
+            width: 100%;
+        }
+
+    button, input, select {
+        min-height: 44px;
+    }
+    /* comfortable tap targets */
+}

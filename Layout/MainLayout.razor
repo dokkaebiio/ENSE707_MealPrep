@@ -1,7 +1,33 @@
 @inherits LayoutComponentBase
+@using MealPrep.Services
+@using Microsoft.AspNetCore.Components.Sections
+@inject AccessibilitySettings A11y
 
-<div class="page">
-    <main>
-        @Body
-    </main>
+@* The accessibility wrapper and controls live here so every page (Home, Login, Sign Up) gets them (NFR5). *@
+<div class="app-root @(A11y.IsDark ? "dark" : "") text-@A11y.TextLevel">
+
+    <header class="app-header">
+        <span class="nav-badge">MealPlan</span>
+
+        <div class="a11y-controls" role="group" aria-label="Accessibility settings">
+            @* Pages can put buttons here, next to dark mode. The Home page puts the deals bell here. *@
+            <SectionOutlet SectionName="header-actions" />
+
+            <button class="theme-toggle" aria-pressed="@(A11y.IsDark ? "true" : "false")" @onclick="A11y.ToggleThemeAsync">
+                @(A11y.IsDark ? "☀️ Light mode" : "🌙 Dark mode")
+            </button>
+            <button class="text-smaller" aria-label="Decrease text size"
+                    disabled="@(A11y.TextLevel == AccessibilitySettings.MinTextLevel)"
+                    @onclick="() => A11y.ChangeTextSizeAsync(-1)">A−</button>
+            <button class="text-larger" aria-label="Increase text size"
+                    disabled="@(A11y.TextLevel == AccessibilitySettings.MaxTextLevel)"
+                    @onclick="() => A11y.ChangeTextSizeAsync(1)">A+</button>
+        </div>
+    </header>
+
+    <div class="page">
+        <main>
+            @Body
+        </main>
+    </div>
 </div>

@@ -1,150 +1,617 @@
-@page "/"
+﻿@page "/"
+@using MealPrep.Services
+@using Microsoft.AspNetCore.Components.Sections
 @inject HttpClient Http
+@inject AuthService Auth
+@inject SpendingHistoryService SpendingHistory
+@inject ILocalStorageService LocalStorage
 
 <PageTitle>Grocery Cart & Budget Planner</PageTitle>
 
+@* Deal notifications bell: shown in the layout's accessibility bar, right next to
+   the dark mode button (see the SectionOutlet in MainLayout.razor). *@
+<SectionContent SectionName="header-actions">
+    <div class="notif-wrapper">
+        @if (DemoMode)
+        {
+            <button class="demo-btn" @onclick="SimulateDealUpdate">Demo: new deal</button>
+            <button class="demo-btn" @onclick="ResetDealsDemo">Demo: reset</button>
+        }
+        <button class="notif-bell" aria-label="@BellLabel"
+                aria-expanded="@(ShowNotifications ? "true" : "false")"
+                @onclick="ToggleNotifications">
+            🔔
+            @if (UnseenDeals.Count > 0)
+            {
+                <span class="notif-count">@UnseenDeals.Count</span>
+            }
+        </button>
+
+        @if (ShowNotifications)
+        {
+            <div class="notif-panel" role="region" aria-label="Deal notifications">
+                <div class="notif-header">
+                    <strong>Deals</strong>
+                    <button class="notif-mark-read" disabled="@(UnseenDeals.Count == 0)"
+                            @onclick="MarkDealsSeen">
+                        Mark all as read
+                    </button>
+                </div>
+
+                @if (!ActiveDeals.Any())
+                {
+                    <div class="notif-empty">No deals right now.</div>
+                }
+
+                @foreach (var deal in ActiveDeals)
+                {
+                    var item = AllItems.FirstOrDefault(i => i.Id == deal.ItemId);
+                    if (item is null) { continue; }
+                    var isNew = IsUnseen(deal);
+
+                    <div class="notif-item @(isNew ? "notif-new" : "")">
+                        <div class="notif-item-title">
+                            @item.Emoji @item.Name
+                            @if (isNew)
+                            {
+                                <span class="notif-tag">New</span>
+                            }
+                            @if (Cart.Any(c => c.Id == deal.ItemId))
+                            {
+                                <span class="notif-tag notif-tag-cart">In your cart</span>
+                            }
+                        </div>
+                        <div class="notif-item-detail">
+                            $@deal.DealPrice.ToString("F2") at @deal.Supermarket
+                            @if (RegularPrice(deal) is decimal was)
+                            {
+                                <span class="notif-was">$@was.ToString("F2")</span>
+                            }
+                        </div>
+                        <div class="notif-item-expiry">Ends @deal.ExpiresOn.ToString("ddd d MMM")</div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</SectionContent>
+
+@* The MealPlan badge now lives in the header bar (MainLayout.razor), next to the bell and dark mode. *@
 <div class="top-nav">
-    <span class="nav-badge">MealPlan</span>
+    <div class="user-greeting">
+        @if (Auth.CurrentUser is not null)
+        {
+            <text>Hi, <span class="user-greeting-name">@Auth.CurrentUser.Name</span> 👋</text>
+        }
+    </div>
     <nav class="nav-links">
-        <!-- buttons/links go here -->
+        @if (Auth.CurrentUser is not null)
+        {
+            <button class="logout-btn" @onclick="HandleLogout">Logout</button>
+        }
+        else
+        {
+            <NavLink href="/login">Login</NavLink>
+            <NavLink href="/signup">Sign Up</NavLink>
+        }
     </nav>
 </div>
 
 <div class="page-layout">
 
     <div class="main-content">
+        <div class="location-select-row">
+            <label for="city">Your location:</label>
+            <select id="city" @bind="SelectedCity">
+                @foreach (var city in StoreBranches.Cities)
+                {
+                    <option value="@city">@city</option>
+                }
+            </select>
+        </div>
+
         <div class="search-row">
-            <input type="text" placeholder="Search items..." class="search-box" @bind="SearchText" 
-            @bind:event="oninput" />
-<select class="category-select" @bind="SelectedCategory">
-    <option value="All">All</option>
-    @foreach (var cat in AllItems.Select(i => i.Category).Distinct().OrderBy(c => c))
-    {
-        <option value="@cat">@cat</option>
-    }
-</select>   
+            <input type="text" placeholder="Search items..." class="search-box"
+                   @bind="SearchText" @bind:event="oninput" />
+            <select class="category-select" @bind="SelectedCategory">
+                <option value="All">All</option>
+                @foreach (var cat in AllItems.Select(i => i.Category).Distinct().OrderBy(c => c))
+                {
+                    <option value="@cat">@cat</option>
+                }
+            </select>
             <input type="button" value="Search" class="search-button" />
         </div>
 
-<div class="Search-results">
-    @if (!FilteredItems.Any())
-    {
-        <div class="empty-msg">No items found matching your search.</div>
-    }
-    else
-    {
-        @foreach (var item in FilteredItems)
-        {
-            <div class="item-card">
-                <div class="item-emoji">@item.Emoji</div>
-                <div class="item-name">@item.Name</div>
-                <div class="item-price">$@item.Price.ToString("F2") each</div>
-                <div class="item-actions">
-                    <button class="qty-btn">−</button>
-                    <div class="qty-display">1</div>
-                    <button class="qty-btn">+</button>
-                    <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
-                </div>
-            </div>
-        }
-    }
-</div>
+        <div class="Search-results">
+            @if (!FilteredItems.Any())
+            {
+                <div class="empty-msg">No items found matching your search.</div>
+            }
+            else
+            {
+                @foreach (var item in FilteredItems)
+                {
+                    <div class="item-card">
+                        <div class="item-emoji">@item.Emoji</div>
+                        <div class="item-name">@item.Name</div>
+                        <div class="item-price">
+                            $@item.Price.ToString("F2") each
+                            @if (item.HasPriceComparison)
+                            {
+                                <span class="cheapest-badge">@item.CheapestSupermarket</span>
+                            }
+                        </div>
+
+                        @if (item.HasPriceComparison)
+                        {
+                            <button class="compare-link" @onclick="() => ToggleCompare(item.Id)">
+                                @(IsComparing(item.Id) ? "Hide prices" : "Compare prices")
+                            </button>
+
+                            @if (IsComparing(item.Id))
+                            {
+                                <div class="price-comparison">
+                                    @foreach (var p in item.Prices.OrderBy(p => p.Price))
+                                    {
+                                        <div class="price-comparison-row">
+                                            <span>@p.Supermarket</span>
+                                            <span>$@p.Price.ToString("F2")</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+
+                            <div class="item-actions">
+                                <button class="qty-btn" aria-label="Decrease quantity of @item.Name"
+                                        disabled="@(GetQty(item.Id) <= 1)" @onclick="() => ChangeQty(item.Id, -1)">
+                                    −
+                                </button>
+                                <input type="number" class="qty-input" min="1" max="99" inputmode="numeric"
+                                       aria-label="Quantity of @item.Name"
+                                       value="@GetQty(item.Id)"
+                                       @onchange="e => SetQty(item.Id, e.Value?.ToString())" />
+                                <button class="qty-btn" aria-label="Increase quantity of @item.Name"
+                                        @onclick="() => ChangeQty(item.Id, 1)">
+                                    +
+                                </button>
+                                <button class="add-btn" @onclick="() => AddToCart(item)">Add</button>
+                            </div>
+                    </div>
+                }
+            }
+        </div>
     </div>
 
-<aside class="sidebar">
-    <div class="sidebar-card">
+    <aside class="sidebar">
+        <div class="sidebar-card">
 
-        <div class="budget-planner-section">
-            <h2>Budget Planner</h2>
-            <div class="budget-inputs">
-                <label for="budget">Set your budget:</label>
-                <input type="number" id="budget" placeholder="$0.00"
-                       @bind="BudgetInput" @bind:event="oninput" />
-                <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
-            </div>
+            <!-- Budget planner -->
+            <div class="budget-planner-section">
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("budget") ? "false" : "true")"
+                            aria-controls="section-budget" @onclick="@(() => ToggleSection("budget"))">
+                        <span class="section-title">Budget Planner</span>
+                        @if (IsCollapsed("budget"))
+                        {
+                            <span class="section-summary">@BudgetStatusIcon @BudgetStatusText</span>
+                        }
+                        <svg class="section-chevron @(IsCollapsed("budget") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
 
-            <div class="budget-summary budget-@BudgetStatusClass">
-                <div class="budget-amount">
-                    Budget: @(Budget.HasValue ? $"${Budget:F2}" : "Not set")
-                </div>
-                <div class="budget-total">
-                    Spent: $@RunningTotal.ToString("F2")
-                    @if (Budget.HasValue)
-                    {
-                        <span> (@BudgetPercent.ToString("F0")%)</span>
-                    }
-                </div>
-                <div class="budget-status-label">@BudgetStatusText</div>
-            </div>
-        </div>
-
-        <hr class="sidebar-divider" />
-
-<div class="cart-summary-section">
-            <h2>Cart</h2>
-
-            <div class="cart-items">
-                @foreach (var line in Cart)
+                @if (!IsCollapsed("budget"))
                 {
-                    <div class="cart-item-row">
-                        <div class="cart-item-info">
-                            <div class="item-name">@line.Name</div>
-                            <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
+                    <div class="section-body" id="section-budget">
+
+                    <div class="budget-inputs">
+                        <label for="budget">Set your budget:</label>
+                        <input type="number" id="budget" placeholder="$0.00"
+                               @bind="BudgetInput" @bind:event="oninput" />
+                        <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
+                    </div>
+
+                    @if (Auth.CurrentUser is not null && SuggestedBudget.HasValue)
+                    {
+                        <div class="suggested-card">
+                            <div class="suggested-label">Suggested budget</div>
+                            <div class="suggested-row">
+                                <span class="suggested-amount">$@SuggestedBudget.Value.ToString("F2")</span>
+                                <button class="use-suggestion-btn" @onclick="UseSuggestedBudget">Use Budget</button>
+                            </div>
+                            <div class="suggested-footer">
+                                <span class="suggested-basis">
+                                    Based on your last @TripsUsed shopping @(TripsUsed == 1 ? "trip" : "trips")
+                                </span>
+                                <button class="reset-history-btn" @onclick="ConfirmResetHistory">Reset</button>
+                            </div>
                         </div>
-                        <div class="cart-item-qty">Qty: @line.Qty</div>
-                        <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
+                    }
+
+                    <div class="budget-summary">
+                        <div class="budget-line">
+                            <span class="budget-amount">
+                                Budget: @(Budget.HasValue ? $"${Budget:F2}" : "—")
+                            </span>
+                            <span class="status-badge status-@BudgetStatusClass budget-status-label">
+                                @BudgetStatusIcon @BudgetStatusText
+                            </span>
+                        </div>
+                        @if (Budget.HasValue)
+                        {
+                            <div class="progress-track" role="progressbar"
+                                 aria-valuemin="0" aria-valuemax="100"
+                                 aria-valuenow="@ProgressWidth"
+                                 aria-label="@ProgressSummary" title="@ProgressSummary">
+                                <div class="progress-fill budget-@BudgetStatusClass"
+                                     style="width: @(ProgressWidth)%"></div>
+                            </div>
+                        }
+                    </div>
                     </div>
                 }
             </div>
 
-            <div class="cart-summary-total">
-                Total: $@RunningTotal.ToString("F2")
-            </div>
+            <hr class="sidebar-divider" />
 
-            <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
-                Create Recipe from Cart
-            </button>
-        </div>
+            <!-- Cart -->
+            <div class="cart-summary-section">
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("cart") ? "false" : "true")"
+                            aria-controls="section-cart" @onclick="@(() => ToggleSection("cart"))">
+                        <span class="section-title">Cart</span>
+                        @if (IsCollapsed("cart"))
+                        {
+                            <span class="section-summary">@CartSummary</span>
+                        }
+                        <svg class="section-chevron @(IsCollapsed("cart") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
 
-        <hr class="sidebar-divider" />
+                @if (!IsCollapsed("cart"))
+                {
+                    <div class="section-body" id="section-cart">
 
-        <div class="recipes-section">
-            <h2>Saved Recipes</h2>
-
-            @if (!Recipes.Any())
-            {
-                <div class="recipes-empty">No recipes saved yet.</div>
-            }
-            else
-            {
-                <div class="recipe-list">
-                    @foreach (var recipe in Recipes.OrderBy(r => r.Date))
-                    {
-                        <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
-                            <div class="recipe-card-name">@recipe.Name</div>
-                            <div class="recipe-card-date">
-                                @(recipe.Date.HasValue ? recipe.Date.Value.ToString("ddd, MMM d") : "No date set")
+                    <div class="cart-items">
+                        @foreach (var line in Cart)
+                        {
+                            <div class="cart-item-row">
+                                <div class="cart-item-info">
+                                    <div class="item-name">@line.Name</div>
+                                    <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
+                                </div>
+                                    <div class="cart-item-qty-controls">
+                                        <button class="qty-btn" aria-label="Decrease quantity of @line.Name"
+                                                disabled="@(line.Qty <= 1)" @onclick="() => DecreaseQty(line)">
+                                            −
+                                        </button>
+                                        <span class="cart-item-qty"><span class="visually-hidden">Qty: </span>@line.Qty</span>
+                                        <button class="qty-btn" aria-label="Increase quantity of @line.Name"
+                                                @onclick="() => IncreaseQty(line)">
+                                            +
+                                        </button>
+                                    </div>
+                                <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
                             </div>
-                            <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                        }
+                    </div>
+
+                    <div class="cart-summary-total">
+                        <div class="total-line total-line-main">
+                            Total (incl. GST): $@RunningTotal.ToString("F2")
+                        </div>
+                        <div class="total-line total-line-sub">
+                            Excl. GST: $@TotalExclGst.ToString("F2") &nbsp;·&nbsp; GST: $@GstAmount.ToString("F2")
+                        </div>
+                    </div>
+
+                    @if (BranchTotals.Any())
+                    {
+                        <div class="cart-supermarket-comparison">
+                            <div class="cart-supermarket-comparison-title">Best store for this cart in @SelectedCity:</div>
+                            @foreach (var (branch, total) in BranchTotals)
+                            {
+                                <div class="supermarket-total-row @(branch == BestOverallBranch ? "best-market" : "")">
+                                    <span>@branch.Name @(branch == BestOverallBranch ? "✅" : "")</span>
+                                    <span>$@total.ToString("F2")</span>
+                                </div>
+                            }
                         </div>
                     }
-                </div>
-            }
-        </div>
 
-    </div>
-</aside>
+                    <button class="finish-shopping-btn"
+                            disabled="@(!Cart.Any() || Auth.CurrentUser is null)"
+                            @onclick="FinishShopping">
+                        Finish Shopping
+                    </button>
+                    <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
+                        Create Recipe from Cart
+                    </button>
+                    </div>
+                }
+            </div>
+
+            <hr class="sidebar-divider" />
+
+            <!-- Weekly meal plan (FR: schedule recipes for a day of the week) -->
+            <div class="recipes-section">
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("weekly") ? "false" : "true")"
+                            aria-controls="section-weekly" @onclick="@(() => ToggleSection("weekly"))">
+                        <span class="section-title">Weekly Meal Plan</span>
+                        @if (IsCollapsed("weekly"))
+                        {
+                            <span class="section-summary">@WeeklySummary</span>
+                        }
+                        <svg class="section-chevron @(IsCollapsed("weekly") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
+
+                @if (!IsCollapsed("weekly"))
+                {
+                    <div class="section-body" id="section-weekly">
+
+                    @if (!Recipes.Any())
+                    {
+                        <div class="recipes-empty">No recipes saved yet.</div>
+                    }
+                    else
+                    {
+                        <div class="recipe-week">
+                            @foreach (var day in WeekDays)
+                            {
+                                var dayRecipes = Recipes.Where(r => r.Day == day && ShowsInWeeklyPlan(r)).OrderBy(r => r.Name).ToList();
+
+                                <div class="recipe-day-group @(day == DateTime.Today.DayOfWeek ? "today" : "")">
+                                    <div class="recipe-day-heading">@day</div>
+
+                                    @if (!dayRecipes.Any())
+                                    {
+                                        <div class="recipe-day-empty">—</div>
+                                    }
+
+                                    @foreach (var recipe in dayRecipes)
+                                    {
+                                        <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                                            <div class="recipe-card-name">@recipe.Name</div>
+                                            @if (recipe.Date.HasValue)
+                                            {
+                                                <div class="recipe-card-date">📅 @recipe.Date.Value.ToString("ddd d MMM")</div>
+                                            }
+                                            <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @{
+                                var unscheduled = Recipes.Where(r => r.Day is null).OrderBy(r => r.Name).ToList();
+                            }
+                            @if (unscheduled.Any())
+                            {
+                                <div class="recipe-day-group">
+                                    <div class="recipe-day-heading">Not scheduled</div>
+                                    @foreach (var recipe in unscheduled)
+                                    {
+                                        <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                                            <div class="recipe-card-name">@recipe.Name</div>
+                                            <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        @if (OtherDatedRecipesCount > 0)
+                        {
+                            <div class="recipe-other-dates">
+                                <span>
+                                    @OtherDatedRecipesCount @(OtherDatedRecipesCount == 1 ? "recipe is" : "recipes are") on other dates
+                                </span>
+                                <button class="edit-ingredients-btn" @onclick="OpenCalendar">View calendar</button>
+                            </div>
+                        }
+                    }
+                    </div>
+                }
+            </div>
+
+            <hr class="sidebar-divider" />
+
+            <!-- Saved recipes: every saved grocery list, upcoming, weekly and past -->
+            <div class="saved-recipes-section">
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("saved") ? "false" : "true")"
+                            aria-controls="section-saved" @onclick="@(() => ToggleSection("saved"))">
+                        <span class="section-title">Saved Recipes</span>
+                        @if (IsCollapsed("saved"))
+                        {
+                            <span class="section-summary">@SavedSummary</span>
+                        }
+                        <svg class="section-chevron @(IsCollapsed("saved") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
+
+                @if (!IsCollapsed("saved"))
+                {
+                    <div class="section-body" id="section-saved">
+
+                    @if (!Recipes.Any())
+                    {
+                        <div class="recipes-empty">No recipes saved yet.</div>
+                    }
+                    else
+                    {
+                        <div class="saved-list">
+                            <div class="saved-filter" role="group" aria-label="Filter saved recipes">
+                                @foreach (var f in SavedFilters)
+                                {
+                                    <button class="saved-filter-btn @(SavedFilter == f ? "active" : "")"
+                                            aria-pressed="@(SavedFilter == f ? "true" : "false")"
+                                            @onclick="() => SavedFilter = f">
+                                        @f (@SavedCount(f))
+                                    </button>
+                                }
+                            </div>
+
+                            @if (!SavedGroups.Any())
+                            {
+                                <div class="recipes-empty">No @SavedFilter.ToLower() recipes.</div>
+                            }
+
+                            @foreach (var grp in SavedGroups)
+                            {
+                                <div class="saved-group">
+                                    <div class="saved-group-heading">@grp.Title</div>
+
+                                    @foreach (var recipe in grp.Items)
+                                    {
+                                        var expanded = ExpandedRecipes.Contains(recipe.Id);
+
+                                        <div class="saved-recipe-card @(grp.Title == "Past" ? "past" : "")">
+                                            <div class="saved-recipe-top">
+                                                <button class="saved-recipe-name" title="Open recipe"
+                                                        @onclick="() => OpenEditRecipeModal(recipe)">
+                                                    @recipe.Name
+                                                </button>
+                                                <span class="saved-recipe-total">$@RecipeTotal(recipe).ToString("F2")</span>
+                                            </div>
+
+                                            <div class="saved-recipe-meta">
+                                                @ScheduleLabel(recipe) · @recipe.Ingredients.Count item(s)
+                                            </div>
+
+                                            <button class="edit-ingredients-btn saved-toggle"
+                                                    aria-expanded="@(expanded ? "true" : "false")"
+                                                    @onclick="() => ToggleRecipeItems(recipe.Id)">
+                                                @(expanded ? "Hide items" : "Show items")
+                                            </button>
+
+                                            @if (expanded)
+                                            {
+                                                <ul class="saved-recipe-items">
+                                                    @foreach (var line in recipe.Ingredients)
+                                                    {
+                                                        <li>
+                                                            <span>@line.Name × @line.Qty</span>
+                                                            <span>$@((line.UnitPrice * line.Qty).ToString("F2"))</span>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    </div>
+                }
+            </div>
+
+        </div>
+    </aside>
 
 </div>
 
-@if (PendingItem is not null)
+@* Sticky calendar button *@
+<button class="calendar-fab" aria-label="Open meal calendar" title="Meal calendar" @onclick="OpenCalendar">
+    📅
+</button>
+
+@* Meal calendar (month view) *@
+@if (ShowCalendar)
 {
     <div class="modal-overlay">
-        <div class="modal-box">
-            <p>
-                Adding <strong>@PendingItem.Name</strong> will take you to
-                $@PendingTotalIfAdded.ToString("F2"), over your $@Budget?.ToString("F2") budget.
-            </p>
+        <div class="modal-box calendar-modal-box" role="dialog" aria-label="Meal calendar">
+            <div class="calendar-header">
+                <button class="calendar-nav-btn" aria-label="Previous month" @onclick="PrevMonth">‹</button>
+                <h3 class="calendar-title">@CalendarMonth.ToString("MMMM yyyy")</h3>
+                <button class="calendar-nav-btn" aria-label="Next month" @onclick="NextMonth">›</button>
+            </div>
+
+            <div class="calendar-toolbar">
+                <button class="edit-ingredients-btn" @onclick="GoToToday">Today</button>
+                <label class="calendar-toggle">
+                    <input type="checkbox" @bind="ShowWeeklyInCalendar" />
+                    Show weekly repeats
+                </label>
+            </div>
+
+            <div class="calendar-grid">
+                @foreach (var wd in WeekDays)
+                {
+                    <div class="calendar-weekday">@wd.ToString().Substring(0, 3)</div>
+                }
+
+                @foreach (var date in CalendarDays)
+                {
+                    var dated = DatedRecipesOn(date);
+                    var weekly = ShowWeeklyInCalendar ? WeeklyRecipesOn(date) : new List<Recipe>();
+
+                    @* Clicking anywhere on the day opens "New Recipe" for that date.
+                       Clicking a recipe chip opens that recipe instead (stopPropagation). *@
+                    <div class="calendar-cell @(date.Month != CalendarMonth.Month ? "other-month" : "") @(date.Date == DateTime.Today ? "today" : "")"
+                         role="button" tabindex="0"
+                         aria-label="Add a recipe on @date.ToString("dddd d MMMM")"
+                         title="Add a recipe on @date.ToString("ddd d MMM")"
+                         @onclick="() => OpenCreateRecipeFromCalendar(date)"
+                         @onkeydown="e => OnCalendarCellKey(e, date)">
+                        <span class="calendar-date-num">@date.Day</span>
+
+                        @foreach (var r in dated)
+                        {
+                            <button class="cal-chip" title="@r.Name"
+                                    @onclick="() => OpenRecipeFromCalendar(r)" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">@r.Name</button>
+                        }
+                        @foreach (var r in weekly)
+                        {
+                            <button class="cal-chip cal-chip-weekly" title="@r.Name (every @r.Day)"
+                                    @onclick="() => OpenRecipeFromCalendar(r)" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">↻ @r.Name</button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="calendar-legend">
+                <span><span class="legend-swatch legend-dated"></span>On a specific date</span>
+                <span><span class="legend-swatch legend-weekly"></span>↻ Repeats every week</span>
+                <span>Click a day to add a recipe</span>
+            </div>
+
+            <div class="modal-actions">
+                <button @onclick="CloseCalendar">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Over-budget confirmation modal *@
+    @if (PendingAction is not null)
+    {
+        <div class="modal-overlay">
+            <div class="modal-box">
+                <p>
+                    Adding <strong>@PendingLabel</strong> will take you to
+                    $@PendingTotalIfAdded.ToString("F2"), over your $@Budget?.ToString("F2") budget.
+                </p>
             <div class="modal-actions">
                 <button @onclick="ConfirmAddAnyway">Add anyway</button>
                 <button @onclick="CancelPendingAdd">Cancel</button>
@@ -154,6 +621,7 @@
     </div>
 }
 
+@* Recipe create/edit modal *@
 @if (ShowRecipeModal)
 {
     <div class="modal-overlay">
@@ -167,21 +635,118 @@
             </div>
 
             <div class="recipe-form-field">
-                <label for="recipe-date">Day to make it</label>
-                <input type="date" id="recipe-date" @bind="RecipeDateInput" />
+                <label for="recipe-day">Day of the week</label>
+                <div class="recipe-day-row">
+                    <select id="recipe-day" @bind="RecipeDayInput" disabled="@RecipeDateInput.HasValue">
+                        <option value="">Choose a day…</option>
+                        @foreach (var d in WeekDays)
+                        {
+                            <option value="@d">@d</option>
+                        }
+                    </select>
+                    <button type="button" class="calendar-icon-btn @(ShowDatePicker ? "active" : "")"
+                            aria-label="@CalendarIconLabel" title="@CalendarIconLabel"
+                            aria-expanded="@(ShowDatePicker ? "true" : "false")"
+                            disabled="@RepeatWeeklyInput"
+                            @onclick="ToggleDatePicker">
+                        📅
+                    </button>
+                </div>
+
+                @if (ShowDatePicker && !RepeatWeeklyInput)
+                {
+                    <div class="recipe-date-row">
+                        <input type="date" id="recipe-date" aria-label="Specific date"
+                               value="@(RecipeDateInput?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))"
+                               @onchange="OnRecipeDateChanged" />
+                        @if (RecipeDateInput.HasValue)
+                        {
+                            <button class="edit-ingredients-btn" @onclick="ClearRecipeDate">Clear date</button>
+                        }
+                    </div>
+                }
+
+                <label class="recipe-weekly-toggle">
+                    <input type="checkbox" checked="@RepeatWeeklyInput" @onchange="OnRepeatWeeklyChanged" />
+                    Repeat every week
+                </label>
+
+                <div class="recipe-date-hint">@ScheduleHint</div>
             </div>
 
             <div class="recipe-ingredients-preview">
-                <label>Ingredients</label>
-                <ul>
-                    @{
-                        var ingredientsToShow = EditingRecipe is null ? Cart : EditingRecipe.Ingredients;
-                    }
-                    @foreach (var line in ingredientsToShow)
+                <div class="recipe-ingredients-header">
+                    <label>Ingredients</label>
+                    @if (EditingRecipe is not null && !EditingIngredients)
                     {
-                        <li>@line.Name (x@(line.Qty))</li>
+                        <button class="edit-ingredients-btn icon-btn" aria-label="Edit ingredients" title="Edit ingredients"
+                                @onclick="StartEditIngredients">
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z M13.5 6.5l4 4"
+                                      fill="none" stroke="currentColor" stroke-width="2"
+                                      stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </button>
                     }
-                </ul>
+                    @if (EditingIngredients && EditingRecipe is not null)
+                    {
+                        <button class="edit-ingredients-btn" @onclick="DiscardIngredientEdits">Discard changes</button>
+                    }
+                </div>
+
+                @if (EditingIngredients)
+                {
+                    <div class="ingredient-edit-list">
+                        @if (!IngredientDraft.Any())
+                        {
+                            <div class="ingredient-edit-empty">No ingredients. Add at least one below.</div>
+                        }
+
+                        @foreach (var line in IngredientDraft)
+                        {
+                            <div class="ingredient-edit-row">
+                                <span class="ingredient-edit-name">@line.Name</span>
+                                <div class="cart-item-qty-controls">
+                                    <button class="qty-btn" aria-label="Decrease quantity of @line.Name"
+                                            disabled="@(line.Qty <= 1)" @onclick="() => ChangeDraftQty(line, -1)">
+                                        −
+                                    </button>
+                                    <span class="cart-item-qty"><span class="visually-hidden">Qty: </span>@line.Qty</span>
+                                    <button class="qty-btn" aria-label="Increase quantity of @line.Name"
+                                            disabled="@(line.Qty >= MaxQty)" @onclick="() => ChangeDraftQty(line, 1)">
+                                        +
+                                    </button>
+                                </div>
+                                <button class="remove-btn" aria-label="Remove @line.Name"
+                                        @onclick="() => RemoveDraftIngredient(line)">✕</button>
+                            </div>
+                        }
+
+                        <div class="ingredient-add-row">
+                            <select aria-label="Choose an ingredient to add" @bind="AddIngredientItemId">
+                                <option value="">Add an ingredient…</option>
+                                @foreach (var gi in AllItems.OrderBy(i => i.Name))
+                                {
+                                    <option value="@gi.Id">@gi.Emoji @gi.Name</option>
+                                }
+                            </select>
+                            <button class="add-btn" disabled="@(AddIngredientItemId is null)"
+                                    @onclick="AddDraftIngredient">Add</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <ul>
+                        @{
+                            var ingredientsToShow = EditingRecipe is null ? Cart : EditingRecipe.Ingredients;
+                        }
+                        @foreach (var line in ingredientsToShow)
+                        {
+                            <li>@line.Name (x@(line.Qty))</li>
+                        }
+                    </ul>
+                }
             </div>
 
             @if (!string.IsNullOrEmpty(RecipeErrorMessage))
@@ -193,7 +758,7 @@
                 <button @onclick="SaveRecipe">@(EditingRecipe is null ? "Save Recipe" : "Save Changes")</button>
                 @if (EditingRecipe is not null)
                 {
-                    <button @onclick="DuplicateRecipeToNewDay">Save on This Day Too</button>
+                    <button @onclick="DuplicateRecipeToNewDay">Save a Copy on This Day</button>
                     <button class="danger-btn" @onclick="DeleteRecipe">Delete</button>
                 }
                 <button @onclick="CloseRecipeModal">Cancel</button>
@@ -201,234 +766,1035 @@
         </div>
     </div>
 }
+@* Override or save-as-new prompt, shown when saving changed ingredients *@
+@if (ShowOverwritePrompt && EditingRecipe is not null)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <p>
+                You changed the ingredients of <strong>@EditingRecipe.Name</strong>.
+                Do you want to override this recipe, or save the changes as a new recipe?
+            </p>
+            <div class="modal-actions">
+                <button @onclick="OverwriteRecipe">Override recipe</button>
+                <button @onclick="SaveAsNewRecipe">Create new recipe</button>
+                <button @onclick="CancelOverwritePrompt">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+@if (ShowResetConfirm)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <p>Clear your shopping history? This removes all @SpendingHistoryList.Count recorded trip(s) and the suggested budget will disappear until you shop again.</p>
+            <div class="modal-actions">
+                <button @onclick="DoResetHistory">Yes, reset</button>
+                <button @onclick="CancelResetHistory">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
-private List<GroceryItem> AllItems = new();
+    // ---------- Items / search ----------
 
-protected override async Task OnInitializedAsync()
-{
-    AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
-}
-private string SearchText = "";
-private string SelectedCategory = "All";
+    private List<GroceryItem> AllItems = new();
+    private string SearchText = "";
+    private string SelectedCategory = "All";
 
-private IEnumerable<GroceryItem> FilteredItems =>
-    AllItems.Where(i =>
-        (SelectedCategory == "All" || i.Category == SelectedCategory) &&
-        (string.IsNullOrWhiteSpace(SearchText) || i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+    private IEnumerable<GroceryItem> FilteredItems =>
+        AllItems.Where(i =>
+            (SelectedCategory == "All" || i.Category == SelectedCategory) &&
+            (string.IsNullOrWhiteSpace(SearchText) ||
+             i.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
 
-// --- Cart ---
+    // Item ids whose supermarket price comparison is currently expanded.
+    private HashSet<int> ExpandedComparisons = new();
 
-private List<ListLineItem> Cart = new();
-private decimal RunningTotal => Cart.Sum(c => c.LineTotal);
+    private bool IsComparing(int itemId) => ExpandedComparisons.Contains(itemId);
 
-// --- Budget ---
-
-private decimal? Budget;
-private string BudgetInput = "";
-
-private void ApplyBudget()
-{
-    if (decimal.TryParse(BudgetInput, out var val) && val > 0)
-        Budget = val;
-    else
-        Budget = null; // empty/invalid input clears the budget — "no budget" is allowed
-}
-
-private decimal BudgetPercent => Budget.HasValue && Budget > 0
-    ? (RunningTotal / Budget.Value) * 100m
-    : 0;
-
-private string BudgetStatusClass =>
-    Budget is null ? "none" :
-    BudgetPercent >= 90 ? "danger" :
-    BudgetPercent >= 75 ? "warning" :
-    "good";
-
-private string BudgetStatusText =>
-    Budget is null ? "No budget set" :
-    BudgetPercent >= 90 ? "Almost at budget!" :
-    BudgetPercent >= 75 ? "Getting close" :
-    "Looking good";
-
-// --- Add-to-cart with over-budget prompt ---
-
-private GroceryItem? PendingItem;      // item awaiting confirmation
-private decimal PendingTotalIfAdded;   // what the total would become
-
-private void AddToCart(GroceryItem item)
-{
-    var wouldBeTotal = RunningTotal + item.Price;
-
-    if (Budget.HasValue && wouldBeTotal > Budget.Value)
+    private void ToggleCompare(int itemId)
     {
-        // Don't add yet — ask first
-        PendingItem = item;
-        PendingTotalIfAdded = wouldBeTotal;
-        return;
+        if (!ExpandedComparisons.Add(itemId))
+            ExpandedComparisons.Remove(itemId);
     }
 
-    DoAdd(item);
-}
-
-private void DoAdd(GroceryItem item)
-{
-    var existing = Cart.FirstOrDefault(c => c.Id == item.Id);
-    if (existing is not null)
+    protected override async Task OnInitializedAsync()
     {
-        existing.Qty++;
+        AllItems = await Http.GetFromJsonAsync<List<GroceryItem>>("data/items.json") ?? new();
+        await LoadDealsAsync();
+        await LoadSavedStateAsync();
+        await LoadSpendingHistory();
     }
-    else
+
+    // ---------- Deal notifications (FR4) ----------
+    // Prototype scope: deals come from wwwroot/data/deals.json. "Updated" means a
+    // deal's UpdatedAt is newer than the user's last "mark all as read".
+    // No server, so nothing is pushed while the app is closed.
+
+    private List<Deal> AllDeals = new();
+    private DateTime? DealsLastSeen;
+    private bool ShowNotifications;
+
+    private List<Deal> ActiveDeals => DealNotifier.GetActiveDeals(AllDeals, DateTime.Now);
+    private List<Deal> UnseenDeals => DealNotifier.GetUnseenDeals(AllDeals, DealsLastSeen, DateTime.Now);
+    private bool IsUnseen(Deal deal) => UnseenDeals.Any(u => u.Id == deal.Id);
+
+    private string BellLabel =>
+        UnseenDeals.Count == 0 ? "Deal notifications" : $"Deal notifications, {UnseenDeals.Count} new";
+
+    private decimal? RegularPrice(Deal deal) =>
+        AllItems.FirstOrDefault(i => i.Id == deal.ItemId)
+                ?.Prices?.FirstOrDefault(p => p.Supermarket == deal.Supermarket)?.Price;
+
+    private void ToggleNotifications() => ShowNotifications = !ShowNotifications;
+
+    private async Task MarkDealsSeen()
     {
-        Cart.Add(new ListLineItem
+        DealsLastSeen = DateTime.Now;
+        await LocalStorage.SetItemAsync($"{KeyPrefix}_deals_seen", DealsLastSeen);
+    }
+
+    // ---------- For Demo and Presentation Use Only ----------
+    // Visit /?demo=true to show the demo buttons.
+    // deals.json is untouched, and a page reload returns to the file's contents.
+
+    [Parameter, SupplyParameterFromQuery(Name = "demo")]
+    public string? Demo { get; set; }
+
+    private bool DemoMode => string.Equals(Demo, "true", StringComparison.OrdinalIgnoreCase);
+
+    private readonly Random _demoRandom = new();
+
+    // Demo-created deals are stored under a global key (not per-user), because deals
+    // themselves aren't user-specific. Only demo deals go here; deals.json is never modified.
+    private const string DemoDealsKey = "mealprep_demo_deals";
+
+    private async Task LoadDealsAsync()
+    {
+        try
         {
-            Id = item.Id,
-            Name = item.Name,
-            UnitPrice = item.Price,
-            Qty = 1
-        });
-    }
-}
-
-private void ConfirmAddAnyway()
-{
-    if (PendingItem is not null)
-        DoAdd(PendingItem);
-    PendingItem = null;
-}
-
-private void CancelPendingAdd()
-{
-    PendingItem = null;
-}
-
-private void GoChangeBudget()
-{
-    PendingItem = null;
-}
-
-private void RemoveFromCart(ListLineItem line)
-{
-    Cart.Remove(line);
-}
-
-// --- Recipes ---
-
-private List<Recipe> Recipes = new();
-
-private bool ShowRecipeModal = false;
-private Recipe? EditingRecipe = null;   // null => creating a new recipe from the current cart
-private string RecipeNameInput = "";
-private DateTime? RecipeDateInput;
-private string RecipeErrorMessage = "";
-
-private void OpenCreateRecipeModal()
-{
-    if (!Cart.Any())
-        return;
-
-    EditingRecipe = null;
-    RecipeNameInput = "";
-    RecipeDateInput = DateTime.Today;
-    RecipeErrorMessage = "";
-    ShowRecipeModal = true;
-}
-
-private void OpenEditRecipeModal(Recipe recipe)
-{
-    EditingRecipe = recipe;
-    RecipeNameInput = recipe.Name;
-    RecipeDateInput = recipe.Date;
-    RecipeErrorMessage = "";
-    ShowRecipeModal = true;
-}
-
-private void SaveRecipe()
-{
-    if (string.IsNullOrWhiteSpace(RecipeNameInput))
-    {
-        RecipeErrorMessage = "Please give the recipe a name.";
-        return;
-    }
-
-    if (EditingRecipe is null)
-    {
-        // Creating a brand-new recipe from a snapshot of the current cart
-        var newRecipe = new Recipe
+            AllDeals = await Http.GetFromJsonAsync<List<Deal>>($"data/deals.json?v={DateTime.Now.Ticks}") ?? new();
+        }
+        catch (Exception ex) when (ex is HttpRequestException || ex is System.Text.Json.JsonException)
         {
-            Name = RecipeNameInput.Trim(),
-            Date = RecipeDateInput,
-            Ingredients = Cart.Select(c => new ListLineItem
-            {
-                Id = c.Id,
-                Name = c.Name,
-                UnitPrice = c.UnitPrice,
-                Qty = c.Qty
-            }).ToList()
+            AllDeals = new();
+        }
+
+        // Deals added with the demo button survive reloads and also appear in normal
+        // (non-demo) mode.
+        var demoDeals = await LocalStorage.GetItemAsync<List<Deal>>(DemoDealsKey) ?? new();
+        AllDeals.AddRange(demoDeals);
+    }
+
+    private async Task SimulateDealUpdate()
+    {
+        var candidates = AllItems
+            .Where(i => i.Prices != null)
+            .SelectMany(i => i.Prices.Select(p => (Item: i, Entry: p)))
+            .Where(c => !AllDeals.Any(d => d.ItemId == c.Item.Id && d.Supermarket == c.Entry.Supermarket))
+            .ToList();
+
+        if (!candidates.Any())
+            return;
+
+        var pick = candidates
+            .OrderByDescending(c => Cart.Any(l => l.Id == c.Item.Id))
+            .ThenBy(_ => _demoRandom.Next())
+            .First();
+
+        var demoDeals = await LocalStorage.GetItemAsync<List<Deal>>(DemoDealsKey) ?? new();
+
+        var newDeal = new Deal
+        {
+            Id = 1000 + demoDeals.Count + 1,   // demo ids start at 1000 so they can't clash with deals.json
+            ItemId = pick.Item.Id,
+            Supermarket = pick.Entry.Supermarket,
+            DealPrice = Math.Round(pick.Entry.Price * 0.8m, 2),
+            ExpiresOn = DateTime.Today.AddDays(7).AddHours(23).AddMinutes(59),
+            UpdatedAt = DateTime.Now
         };
 
-        Recipes.Add(newRecipe);
-    }
-    else
-    {
-        // Editing an existing, previously-saved recipe
-        EditingRecipe.Name = RecipeNameInput.Trim();
-        EditingRecipe.Date = RecipeDateInput;
+        demoDeals.Add(newDeal);
+        await LocalStorage.SetItemAsync(DemoDealsKey, demoDeals);
+        AllDeals.Add(newDeal);
     }
 
-    CloseRecipeModal();
-}
-
-private void DuplicateRecipeToNewDay()
-{
-    if (EditingRecipe is null)
-        return;
-
-    if (string.IsNullOrWhiteSpace(RecipeNameInput))
+    // Clears the demo deals and the read state, so every deal in deals.json is New again.
+    private async Task ResetDealsDemo()
     {
-        RecipeErrorMessage = "Please give the recipe a name.";
-        return;
+        DealsLastSeen = null;
+        await LocalStorage.RemoveItemAsync($"{KeyPrefix}_deals_seen");
+        await LocalStorage.RemoveItemAsync(DemoDealsKey);
+        await LoadDealsAsync();
     }
 
-    // Creates a brand-new, independent recipe entry with the same ingredients,
-    // using whatever name/date is currently in the form — the original is left untouched.
-    var copy = new Recipe
+    // ---------- Persistence (NFR4) ----------
+    // Cart, budget and recipes are saved to local storage per user, with a
+    // "guest" key when nobody is logged in.
+
+    private string KeyPrefix => Auth.CurrentUser?.Email ?? "guest";
+
+    private async Task LoadSavedStateAsync()
     {
-        Name = RecipeNameInput.Trim(),
-        Date = RecipeDateInput,
-        Ingredients = EditingRecipe.Ingredients.Select(i => new ListLineItem
+        Cart = await LocalStorage.GetItemAsync<List<ListLineItem>>($"{KeyPrefix}_cart") ?? new();
+        Recipes = await LocalStorage.GetItemAsync<List<Recipe>>($"{KeyPrefix}_recipes") ?? new();
+        Budget = await LocalStorage.GetItemAsync<decimal?>($"{KeyPrefix}_budget");
+        BudgetInput = Budget?.ToString() ?? "";
+        DealsLastSeen = await LocalStorage.GetItemAsync<DateTime?>($"{KeyPrefix}_deals_seen");
+        CollapsedSections = await LocalStorage.GetItemAsync<HashSet<string>>($"{KeyPrefix}_collapsed") ?? new();
+
+        // Recipes saved before day-of-week scheduling only had a calendar date:
+        // keep the date and fill in the weekday it falls on.
+        var migrated = false;
+        foreach (var r in Recipes.Where(r => r.Day is null && r.Date.HasValue))
+        {
+            r.Day = r.Date!.Value.DayOfWeek;
+            migrated = true;
+        }
+        if (migrated)
+            await SaveRecipesAsync();
+    }
+
+    private async Task SaveCartAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_cart", Cart);
+    private async Task SaveRecipesAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_recipes", Recipes);
+    private async Task SaveBudgetAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_budget", Budget);
+
+    // ---------- Cart ----------
+
+    private List<ListLineItem> Cart = new();
+    private decimal RunningTotal => Cart.Sum(c => c.LineTotal);
+
+    private const int MaxQty = 99;
+
+    private async Task DoAdd(GroceryItem item, int qty = 1)
+    {
+        var existing = Cart.FirstOrDefault(c => c.Id == item.Id);
+        if (existing is not null)
+        {
+            existing.Qty = Math.Min(existing.Qty + qty, MaxQty);
+        }
+        else
+        {
+            Cart.Add(new ListLineItem
+            {
+                Id = item.Id,
+                Name = item.Name,
+                UnitPrice = item.Price,
+                Qty = qty,
+                Prices = item.Prices
+            });
+        }
+        await SaveCartAsync();
+    }
+
+    // --- GST (FR5) ---
+    // NZ GST rate. Item prices are assumed GST-inclusive, matching standard NZ retail pricing.
+    private const decimal GstRate = 0.15m;
+
+    private decimal TotalExclGst => Math.Round(RunningTotal / (1 + GstRate), 2);
+    private decimal GstAmount => Math.Round(RunningTotal - TotalExclGst, 2);
+
+    // --- Whole-cart store comparison, per branch in the selected city (FR7) ---
+
+    private string SelectedCity = StoreBranches.Cities.FirstOrDefault() ?? "Auckland";
+
+    private List<(Branch Branch, decimal Total)> BranchTotals
+    {
+        get
+        {
+            var relevantBranches = StoreBranches.All.Where(b => b.City == SelectedCity).ToList();
+            if (!Cart.Any() || !relevantBranches.Any())
+                return new();
+
+            var results = new List<(Branch, decimal)>();
+            foreach (var branch in relevantBranches)
+            {
+                decimal total = 0m;
+                foreach (var line in Cart)
+                {
+                    var priceAtBrand = line.Prices.FirstOrDefault(p => p.Supermarket == branch.Supermarket);
+                    // Fallback: items without a price at this brand use their
+                    // base/cheapest price instead — a reasonable estimate, not exact.
+                    var basePrice = priceAtBrand?.Price ?? line.UnitPrice;
+                    total += basePrice * branch.PriceModifier * line.Qty;
+                }
+                results.Add((branch, total));
+            }
+
+            return results.OrderBy(r => r.Item2).ToList();
+        }
+    }
+
+    private Branch? BestOverallBranch => BranchTotals.FirstOrDefault().Branch;
+
+    private async Task RemoveFromCart(ListLineItem line)
+    {
+        Cart.Remove(line);
+        await SaveCartAsync();
+    }
+
+    // ---------- Budget ----------
+
+    private decimal? Budget;
+    private string BudgetInput = "";
+
+    private async Task ApplyBudget()
+    {
+        if (decimal.TryParse(BudgetInput, out var val) && val > 0)
+            Budget = val;
+        else
+            Budget = null; // empty/invalid input clears the budget — "no budget" is allowed
+        await SaveBudgetAsync();
+    }
+
+    private decimal BudgetPercent => Budget.HasValue && Budget > 0
+        ? (RunningTotal / Budget.Value) * 100m
+        : 0;
+
+    // The bar is driven by the cart total (RunningTotal) vs the budget, capped at 100% width.
+    private string ProgressWidth => Math.Min(BudgetPercent, 100).ToString("F0");
+
+    private string ProgressSummary =>
+        Budget.HasValue
+            ? $"${RunningTotal:F2} of ${Budget.Value:F2} ({BudgetPercent:F0}%)"
+            : "";
+
+    private string BudgetStatusClass =>
+        Budget is null ? "none" :
+        BudgetPercent > 100 ? "over" :
+        BudgetPercent >= 100 ? "reached" :
+        BudgetPercent >= 90 ? "danger" :
+        BudgetPercent >= 75 ? "warning" :
+        "good";
+
+    private string BudgetStatusText =>
+        Budget is null ? "No budget set" :
+        BudgetPercent > 100 ? "Over budget!" :
+        BudgetPercent >= 100 ? "Budget reached!" :
+        BudgetPercent >= 90 ? "Almost at budget!" :
+        BudgetPercent >= 75 ? "Getting close" :
+        "Looking good";
+
+    private string BudgetStatusIcon =>
+        Budget is null ? "" :
+        BudgetPercent > 100 ? "✕" :
+        BudgetPercent >= 100 ? "!" :
+        BudgetPercent >= 75 ? "⚠" :
+        "✓";
+
+    // ---------- Quantity selection and add-to-cart with over-budget prompt ----------
+
+    // Quantity picked on each item card before adding (defaults to 1).
+    private Dictionary<int, int> SelectedQty = new();
+
+    private int GetQty(int itemId) => SelectedQty.TryGetValue(itemId, out var q) ? q : 1;
+
+    private void ChangeQty(int itemId, int delta) => SelectedQty[itemId] = Math.Clamp(GetQty(itemId) + delta, 1, MaxQty);
+
+    private void SetQty(int itemId, string? raw) => SelectedQty[itemId] = ParseQty(raw);
+
+    // Turns whatever the user typed into a valid quantity:
+    // blank or invalid -> 1, decimals round down, anything above MaxQty -> MaxQty.
+    private static int ParseQty(string? raw)
+    {
+        if (!decimal.TryParse(raw, System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out var n))
+            return 1;
+
+        return (int)Math.Clamp(Math.Floor(n), 1, MaxQty);
+    }
+
+    // Waits for the user's answer to the over-budget prompt.
+    private Func<Task>? PendingAction;
+    private string PendingLabel = "";
+    private decimal PendingTotalIfAdded;   // what the total would become
+
+    // Everything that raises the total goes through here, so the budget check
+    // applies equally to item-card adds and + presses in the cart.
+    private async Task RunWithBudgetCheck(string label, decimal extraCost, Func<Task> action)
+    {
+        var wouldBeTotal = RunningTotal + extraCost;
+
+        if (Budget.HasValue && wouldBeTotal > Budget.Value)
+        {
+            // ask users first
+            PendingLabel = label;
+            PendingTotalIfAdded = wouldBeTotal;
+            PendingAction = action;
+            return;
+        }
+
+        await action();
+    }
+
+    private async Task AddToCart(GroceryItem item)
+    {
+        var qty = GetQty(item.Id);
+        var label = qty == 1 ? item.Name : $"{qty} × {item.Name}";
+
+        await RunWithBudgetCheck(label, item.Price * qty, async () =>
+        {
+            await DoAdd(item, qty);
+            SelectedQty.Remove(item.Id);   // back to 1 for the next add
+        });
+    }
+
+    private async Task IncreaseQty(ListLineItem line)
+    {
+        if (line.Qty >= MaxQty)
+            return;
+
+        await RunWithBudgetCheck(line.Name, line.UnitPrice, async () =>
+        {
+            line.Qty++;
+            await SaveCartAsync();
+        });
+    }
+
+    private async Task DecreaseQty(ListLineItem line)
+    {
+        if (line.Qty <= 1)
+            return;
+
+        line.Qty--;
+        await SaveCartAsync();
+    }
+
+    private async Task ConfirmAddAnyway()
+    {
+        var action = PendingAction;
+        PendingAction = null;
+        if (action is not null)
+            await action();
+    }
+
+    private void CancelPendingAdd() => PendingAction = null;
+
+    private void GoChangeBudget() => PendingAction = null;   // closes the modal so the user can edit the budget field
+
+
+    // ---------- Spending history / suggested budget (FR3) ----------
+
+    private const int SuggestionTripCount = 5;   // how many recent trips feed the suggestion
+
+    private List<SpendingRecord> SpendingHistoryList = new();
+    private decimal? SuggestedBudget;
+    private int TripsUsed => Math.Min(SpendingHistoryList.Count, SuggestionTripCount);
+
+    private async Task LoadSpendingHistory()
+    {
+        if (Auth.CurrentUser is null)
+            return;
+
+        SpendingHistoryList = await SpendingHistory.GetHistoryAsync(Auth.CurrentUser.Email);
+        SuggestedBudget = SpendingHistory.GetSuggestedBudget(SpendingHistoryList, SuggestionTripCount);
+    }
+
+    private async Task UseSuggestedBudget()
+    {
+        if (SuggestedBudget.HasValue)
+        {
+            Budget = SuggestedBudget.Value;
+            BudgetInput = SuggestedBudget.Value.ToString("F2");
+            await SaveBudgetAsync();
+        }
+    }
+
+    private async Task FinishShopping()
+    {
+        if (!Cart.Any() || Auth.CurrentUser is null)
+            return;
+
+        await SpendingHistory.LogTripAsync(Auth.CurrentUser.Email, RunningTotal);
+        Cart.Clear();
+        await SaveCartAsync();
+        await LoadSpendingHistory(); // refresh the suggestion with the new trip included
+    }
+
+    // Resets the user's spending history and suggested budget. This is a destructive action, so we show a confirmation modal first.
+    private bool ShowResetConfirm = false;
+
+    private void ConfirmResetHistory()
+    {
+        ShowResetConfirm = true;
+    }
+
+    private void CancelResetHistory()
+    {
+        ShowResetConfirm = false;
+    }
+
+    private async Task DoResetHistory()
+    {
+        if (Auth.CurrentUser is not null)
+        {
+            await SpendingHistory.ClearHistoryAsync(Auth.CurrentUser.Email);
+            await LoadSpendingHistory();
+        }
+        ShowResetConfirm = false;
+    }
+
+    // ---------- Recipes / weekly meal plan ----------
+    // Users schedule each recipe for a day of the week (Monday–Sunday).
+
+    private List<Recipe> Recipes = new();
+
+    // Monday-first week, matching NZ convention.
+    private static readonly DayOfWeek[] WeekDays =
+    {
+        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday,
+        DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
+    };
+
+    private bool ShowRecipeModal = false;
+    private Recipe? EditingRecipe = null;   // null => creating a new recipe from the current cart
+    private string RecipeNameInput = "";
+    private DayOfWeek? RecipeDayInput;
+    private string RecipeErrorMessage = "";
+
+    // ---------- Specific date (optional) ----------
+    // A recipe with a Date is a one-off on that date; its Day is set from the date.
+    // Without a Date it repeats every week on its Day.
+
+    private DateTime? RecipeDateInput;
+    private bool ShowDatePicker = false;
+
+    // Recipes are one-off by default. Ticking "Repeat every week" saves it as weekly (no date).
+    private bool RepeatWeeklyInput = false;
+
+    // Next date (today or later) that falls on the given weekday.
+    private static DateTime? NextOccurrence(DayOfWeek? day) =>
+        day is null ? null
+                    : DateTime.Today.AddDays(((int)day.Value - (int)DateTime.Today.DayOfWeek + 7) % 7);
+
+    // What actually gets saved:
+    //   weekly   -> no date, repeats on the chosen day
+    //   one-off  -> the picked date, or the next date on the chosen day
+    private DateTime? ResolvedDate =>
+        RepeatWeeklyInput ? null : (RecipeDateInput ?? NextOccurrence(RecipeDayInput));
+
+    private DayOfWeek? ResolvedDay => ResolvedDate?.DayOfWeek ?? RecipeDayInput;
+
+    private string ScheduleHint =>
+        RepeatWeeklyInput
+            ? (RecipeDayInput.HasValue ? $"Repeats every {RecipeDayInput}." : "Choose a day to repeat every week.")
+            : ResolvedDate.HasValue
+                ? $"Saves for {ResolvedDate.Value:dddd d MMMM yyyy} only." +
+                  (RecipeDateInput.HasValue ? "" : " Use 📅 to pick a later date.")
+                : "Choose a day, or use 📅 to pick a date.";
+
+    private void OnRepeatWeeklyChanged(ChangeEventArgs e)
+    {
+        RepeatWeeklyInput = e.Value is bool ticked && ticked;
+
+        // Weekly recipes don't have a date; the weekday stays as it was.
+        if (RepeatWeeklyInput)
+        {
+            RecipeDateInput = null;
+            ShowDatePicker = false;
+        }
+    }
+
+    private string CalendarIconLabel =>
+        RepeatWeeklyInput ? "Untick 'Repeat every week' to pick a date" :
+        !ShowDatePicker ? "Pick a specific date" :
+        RecipeDateInput.HasValue ? "Remove specific date" :
+        "Hide date picker";
+
+    private void ToggleDatePicker()
+    {
+        if (ShowDatePicker)
+        {
+            // Closing the picker removes the date; the recipe then goes on the next chosen weekday.
+            RecipeDateInput = null;
+            ShowDatePicker = false;
+        }
+        else
+        {
+            ShowDatePicker = true;
+        }
+    }
+
+    private void ClearRecipeDate() => RecipeDateInput = null;
+
+    private void OnRecipeDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var date))
+        {
+            RecipeDateInput = date;
+            RecipeDayInput = date.DayOfWeek;   // keep the weekday in sync with the date
+        }
+        else
+        {
+            RecipeDateInput = null;
+        }
+    }
+
+    // ---------- Meal calendar (sticky button) ----------
+    // The weekly plan shows this week only; the calendar shows any month, so
+    // recipes on dates outside this week can still be found.
+
+    private static int WeekOrder(DayOfWeek d) => ((int)d + 6) % 7;   // Monday = 0 ... Sunday = 6
+
+    private static DateTime StartOfThisWeek => DateTime.Today.AddDays(-WeekOrder(DateTime.Today.DayOfWeek));
+    private static DateTime EndOfThisWeek => StartOfThisWeek.AddDays(6);
+
+    private static bool IsInCurrentWeek(DateTime date) =>
+        date.Date >= StartOfThisWeek && date.Date <= EndOfThisWeek;
+
+    // Weekly recipes always show in the weekly plan; dated ones only when the date is this week.
+    private static bool ShowsInWeeklyPlan(Recipe r) => r.Date is null || IsInCurrentWeek(r.Date.Value);
+
+    private int OtherDatedRecipesCount => Recipes.Count(r => r.Date.HasValue && !IsInCurrentWeek(r.Date.Value));
+
+    private bool ShowCalendar = false;
+    private bool ShowWeeklyInCalendar = true;
+    private bool ReopenCalendarAfterEdit = false;   // return to the calendar after editing from it
+    private DateTime CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    // Every date shown in the month grid, padded to full Monday–Sunday weeks.
+    private IEnumerable<DateTime> CalendarDays
+    {
+        get
+        {
+            var start = CalendarMonth.AddDays(-WeekOrder(CalendarMonth.DayOfWeek));
+            var lastOfMonth = CalendarMonth.AddMonths(1).AddDays(-1);
+            var end = lastOfMonth.AddDays(6 - WeekOrder(lastOfMonth.DayOfWeek));
+
+            for (var d = start; d <= end; d = d.AddDays(1))
+                yield return d;
+        }
+    }
+
+    private List<Recipe> DatedRecipesOn(DateTime date) =>
+        Recipes.Where(r => r.Date.HasValue && r.Date.Value.Date == date.Date).OrderBy(r => r.Name).ToList();
+
+    private List<Recipe> WeeklyRecipesOn(DateTime date) =>
+        Recipes.Where(r => r.Date is null && r.Day == date.DayOfWeek).OrderBy(r => r.Name).ToList();
+
+    private void OpenCalendar()
+    {
+        CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+        ShowCalendar = true;
+    }
+
+    private void CloseCalendar() => ShowCalendar = false;
+    private void PrevMonth() => CalendarMonth = CalendarMonth.AddMonths(-1);
+    private void NextMonth() => CalendarMonth = CalendarMonth.AddMonths(1);
+    private void GoToToday() => CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    // Keyboard users: Enter or Space on a focused day opens "New Recipe" for it.
+    private void OnCalendarCellKey(KeyboardEventArgs e, DateTime date)
+    {
+        if (e.Key is "Enter" or " ")
+            OpenCreateRecipeFromCalendar(date);
+    }
+
+    private void OpenRecipeFromCalendar(Recipe recipe)
+    {
+        ShowCalendar = false;
+        ReopenCalendarAfterEdit = true;
+        OpenEditRecipeModal(recipe);
+    }
+
+    // "+" on a calendar day: new recipe on that date. Ingredients start from the
+    // cart (which may be empty) and can be edited before saving.
+    private void OpenCreateRecipeFromCalendar(DateTime date)
+    {
+        ShowCalendar = false;
+        ReopenCalendarAfterEdit = true;
+
+        EditingRecipe = null;
+        RecipeNameInput = "";
+        RecipeDateInput = date.Date;
+        RecipeDayInput = date.DayOfWeek;
+        RepeatWeeklyInput = false;
+        ShowDatePicker = true;
+        RecipeErrorMessage = "";
+
+        IngredientDraft = CopyIngredients(Cart);
+        AddIngredientItemId = null;
+        EditingIngredients = true;
+
+        ShowRecipeModal = true;
+    }
+
+    // ---------- Collapsible sidebar sections ----------
+    // Budget Planner, Cart, Weekly Meal Plan and Saved Recipes can each be folded away.
+    // Which ones are folded is remembered per user in local storage.
+
+    private HashSet<string> CollapsedSections = new();
+
+    private bool IsCollapsed(string key) => CollapsedSections.Contains(key);
+
+    private async Task ToggleSection(string key)
+    {
+        if (!CollapsedSections.Add(key))
+            CollapsedSections.Remove(key);
+        await LocalStorage.SetItemAsync($"{KeyPrefix}_collapsed", CollapsedSections);
+    }
+
+    // Short line shown next to a folded heading, so the key number is still visible.
+    private string CartSummary =>
+        Cart.Any() ? $"{Cart.Sum(c => c.Qty)} item(s) · ${RunningTotal:F2}" : "Empty";
+
+    private string WeeklySummary
+    {
+        get
+        {
+            var count = Recipes.Count(r => r.Day.HasValue && ShowsInWeeklyPlan(r));
+            return count == 0 ? "Nothing planned" : $"{count} planned";
+        }
+    }
+
+    private string SavedSummary =>
+        Recipes.Count switch
+        {
+            0 => "None saved",
+            1 => "1 recipe",
+            var n => $"{n} recipes"
+        };
+
+    // ---------- Saved recipes list (under the weekly plan) ----------
+    // Every saved recipe in one place, grouped as Upcoming, Weekly and Past.
+
+    private static readonly string[] SavedFilters = { "All", "Upcoming", "Weekly", "Past" };
+    private string SavedFilter = "All";
+    private HashSet<Guid> ExpandedRecipes = new();   // recipes whose item list is open
+
+    // One-off recipes from today onwards, soonest first.
+    private List<Recipe> UpcomingRecipes =>
+        Recipes.Where(r => r.Date.HasValue && r.Date.Value.Date >= DateTime.Today)
+               .OrderBy(r => r.Date).ThenBy(r => r.Name).ToList();
+
+    // Repeating recipes (no date), Monday to Sunday; unscheduled ones last.
+    private List<Recipe> WeeklyRecipes =>
+        Recipes.Where(r => r.Date is null)
+               .OrderBy(r => r.Day is null ? 7 : WeekOrder(r.Day.Value)).ThenBy(r => r.Name).ToList();
+
+    // One-off recipes before today, most recent first.
+    private List<Recipe> PastRecipes =>
+        Recipes.Where(r => r.Date.HasValue && r.Date.Value.Date < DateTime.Today)
+               .OrderByDescending(r => r.Date).ThenBy(r => r.Name).ToList();
+
+    private int SavedCount(string filter) => filter switch
+    {
+        "Upcoming" => UpcomingRecipes.Count,
+        "Weekly" => WeeklyRecipes.Count,
+        "Past" => PastRecipes.Count,
+        _ => Recipes.Count
+    };
+
+    // The groups shown for the current filter, leaving out empty ones.
+    private List<(string Title, List<Recipe> Items)> SavedGroups
+    {
+        get
+        {
+            var groups = new List<(string Title, List<Recipe> Items)>();
+            if (SavedFilter is "All" or "Upcoming") groups.Add(("Upcoming", UpcomingRecipes));
+            if (SavedFilter is "All" or "Weekly") groups.Add(("Weekly", WeeklyRecipes));
+            if (SavedFilter is "All" or "Past") groups.Add(("Past", PastRecipes));
+            return groups.Where(g => g.Items.Any()).ToList();
+        }
+    }
+
+    private static string ScheduleLabel(Recipe r) =>
+        r.Date.HasValue ? $"📅 {r.Date.Value:ddd d MMM yyyy}" :
+        r.Day.HasValue ? $"↻ Every {r.Day}" :
+        "Not scheduled";
+
+    private static decimal RecipeTotal(Recipe r) => r.Ingredients.Sum(i => i.UnitPrice * i.Qty);
+
+    private void ToggleRecipeItems(Guid id)
+    {
+        if (!ExpandedRecipes.Add(id))
+            ExpandedRecipes.Remove(id);
+    }
+
+    private void OpenCreateRecipeModal()
+    {
+        if (!Cart.Any())
+            return;
+
+        EditingRecipe = null;
+        RecipeNameInput = "";
+        RecipeDayInput = DateTime.Today.DayOfWeek;   // default to today's weekday
+        RecipeDateInput = null;
+        ShowDatePicker = false;
+        RepeatWeeklyInput = false;   // one-off by default
+        RecipeErrorMessage = "";
+        ShowRecipeModal = true;
+    }
+
+    private void OpenEditRecipeModal(Recipe recipe)
+    {
+        EditingRecipe = recipe;
+        RecipeNameInput = recipe.Name;
+        RecipeDayInput = recipe.Day;
+        RecipeDateInput = recipe.Date;
+        ShowDatePicker = recipe.Date.HasValue;
+        RepeatWeeklyInput = recipe.Day.HasValue && !recipe.Date.HasValue;   // no date = weekly
+        RecipeErrorMessage = "";
+        EditingIngredients = false;
+        IngredientDraft = new();
+        ShowRecipeModal = true;
+    }
+
+    // ---------- Editing a saved recipe's ingredients ----------
+    // Changes go into a draft copy. On save, the user chooses to override the
+    // original recipe or save the draft as a new recipe.
+
+    private bool EditingIngredients = false;
+    private List<ListLineItem> IngredientDraft = new();
+    private int? AddIngredientItemId;
+    private bool ShowOverwritePrompt = false;
+
+    private static List<ListLineItem> CopyIngredients(IEnumerable<ListLineItem> source) =>
+        source.Select(i => new ListLineItem
         {
             Id = i.Id,
             Name = i.Name,
             UnitPrice = i.UnitPrice,
             Qty = i.Qty
-        }).ToList()
-    };
+        }).ToList();
 
-    Recipes.Add(copy);
-    CloseRecipeModal();
-}
+    private void StartEditIngredients()
+    {
+        if (EditingRecipe is null)
+            return;
 
-private void DeleteRecipe()
-{
-    if (EditingRecipe is not null)
-        Recipes.Remove(EditingRecipe);
+        IngredientDraft = CopyIngredients(EditingRecipe.Ingredients);
+        AddIngredientItemId = null;
+        EditingIngredients = true;
+    }
 
-    CloseRecipeModal();
-}
+    private void DiscardIngredientEdits()
+    {
+        EditingIngredients = false;
+        IngredientDraft = new();
+        AddIngredientItemId = null;
+        RecipeErrorMessage = "";
+    }
 
-private void CloseRecipeModal()
-{
-    ShowRecipeModal = false;
-    EditingRecipe = null;
-    RecipeErrorMessage = "";
-}
+    private void ChangeDraftQty(ListLineItem line, int delta) =>
+        line.Qty = Math.Clamp(line.Qty + delta, 1, MaxQty);
 
-public class Recipe
-{
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "";
-    public DateTime? Date { get; set; }
-    public List<ListLineItem> Ingredients { get; set; } = new();
-}
+    private void RemoveDraftIngredient(ListLineItem line) => IngredientDraft.Remove(line);
+
+    private void AddDraftIngredient()
+    {
+        var item = AllItems.FirstOrDefault(i => i.Id == AddIngredientItemId);
+        if (item is null)
+            return;
+
+        var existing = IngredientDraft.FirstOrDefault(l => l.Id == item.Id);
+        if (existing is not null)
+        {
+            existing.Qty = Math.Min(existing.Qty + 1, MaxQty);
+        }
+        else
+        {
+            IngredientDraft.Add(new ListLineItem
+            {
+                Id = item.Id,
+                Name = item.Name,
+                UnitPrice = item.Price,
+                Qty = 1
+            });
+        }
+
+        AddIngredientItemId = null;
+    }
+
+    // True when the draft differs from the saved recipe (added, removed or quantity changed).
+    private bool IngredientsChanged =>
+        EditingRecipe is not null && EditingIngredients &&
+        (IngredientDraft.Count != EditingRecipe.Ingredients.Count ||
+         IngredientDraft.Any(d => EditingRecipe.Ingredients.FirstOrDefault(o => o.Id == d.Id)?.Qty != d.Qty));
+
+    private async Task OverwriteRecipe()
+    {
+        if (EditingRecipe is null)
+            return;
+
+        EditingRecipe.Name = RecipeNameInput.Trim();
+        EditingRecipe.Day = ResolvedDay;
+        EditingRecipe.Date = ResolvedDate;
+        EditingRecipe.Ingredients = CopyIngredients(IngredientDraft);
+
+        ShowOverwritePrompt = false;
+        await SaveRecipesAsync();
+        CloseRecipeModal();
+    }
+
+    private async Task SaveAsNewRecipe()
+    {
+        if (EditingRecipe is null)
+            return;
+
+        // The original recipe is left untouched.
+        Recipes.Add(new Recipe
+        {
+            Name = RecipeNameInput.Trim(),
+            Day = ResolvedDay,
+            Date = ResolvedDate,
+            Ingredients = CopyIngredients(IngredientDraft)
+        });
+
+        ShowOverwritePrompt = false;
+        await SaveRecipesAsync();
+        CloseRecipeModal();
+    }
+
+    private void CancelOverwritePrompt() => ShowOverwritePrompt = false;   // back to the edit popup, draft kept
+
+    // Shared validation for save and duplicate. Returns false and sets the error if invalid.
+    private bool ValidateRecipeForm()
+    {
+        if (string.IsNullOrWhiteSpace(RecipeNameInput))
+        {
+            RecipeErrorMessage = "Please give the recipe a name.";
+            return false;
+        }
+
+        if (RecipeDayInput is null)
+        {
+            RecipeErrorMessage = "Please choose a day of the week.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task SaveRecipe()
+    {
+        if (!ValidateRecipeForm())
+            return;
+
+        // Ingredients were edited: ask whether to override or create a new recipe.
+        if (IngredientsChanged)
+        {
+            if (!IngredientDraft.Any())
+            {
+                RecipeErrorMessage = "A recipe needs at least one ingredient.";
+                return;
+            }
+
+            RecipeErrorMessage = "";
+            ShowOverwritePrompt = true;
+            return;
+        }
+
+        if (EditingRecipe is null)
+        {
+            // Creating a brand-new recipe: from the edited ingredient list (calendar "+"),
+            // otherwise from a snapshot of the current cart
+            var ingredients = EditingIngredients ? CopyIngredients(IngredientDraft) : CopyIngredients(Cart);
+            if (!ingredients.Any())
+            {
+                RecipeErrorMessage = "A recipe needs at least one ingredient.";
+                return;
+            }
+
+            var newRecipe = new Recipe
+            {
+                Name = RecipeNameInput.Trim(),
+                Day = ResolvedDay,
+                Date = ResolvedDate,
+                Ingredients = ingredients
+            };
+
+            Recipes.Add(newRecipe);
+        }
+        else
+        {
+            // Editing an existing, previously-saved recipe
+            EditingRecipe.Name = RecipeNameInput.Trim();
+            EditingRecipe.Day = ResolvedDay;
+            EditingRecipe.Date = ResolvedDate;
+        }
+
+        await SaveRecipesAsync();
+        CloseRecipeModal();
+    }
+
+    private async Task DuplicateRecipeToNewDay()
+    {
+        if (EditingRecipe is null)
+            return;
+
+        if (!ValidateRecipeForm())
+            return;
+
+        // Brand-new, independent recipe with the same ingredients, using the name/day
+        // currently in the form — the original is left untouched.
+        var copy = new Recipe
+        {
+            Name = RecipeNameInput.Trim(),
+            Day = ResolvedDay,
+            Date = ResolvedDate,
+            Ingredients = (EditingIngredients ? IngredientDraft : EditingRecipe.Ingredients).Select(i => new ListLineItem
+            {
+                Id = i.Id,
+                Name = i.Name,
+                UnitPrice = i.UnitPrice,
+                Qty = i.Qty
+            }).ToList()
+        };
+
+        Recipes.Add(copy);
+        await SaveRecipesAsync();
+        CloseRecipeModal();
+    }
+
+    private async Task DeleteRecipe()
+    {
+        if (EditingRecipe is not null)
+            Recipes.Remove(EditingRecipe);
+
+        await SaveRecipesAsync();
+        CloseRecipeModal();
+    }
+
+    private void CloseRecipeModal()
+    {
+        ShowRecipeModal = false;
+        EditingRecipe = null;
+        RecipeErrorMessage = "";
+        EditingIngredients = false;
+        IngredientDraft = new();
+        AddIngredientItemId = null;
+        ShowOverwritePrompt = false;
+        RecipeDateInput = null;
+        ShowDatePicker = false;
+        RepeatWeeklyInput = false;
+
+        // Opened from the calendar: go back to it.
+        if (ReopenCalendarAfterEdit)
+        {
+            ReopenCalendarAfterEdit = false;
+            ShowCalendar = true;
+        }
+    }
+
+    public class Recipe
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string Name { get; set; } = "";
+        public DayOfWeek? Day { get; set; }          // the day of the week this meal is planned for
+        public DateTime? Date { get; set; }          // optional specific date (one-off); null = repeats every week on Day
+        public List<ListLineItem> Ingredients { get; set; } = new();
+    }
+
+    // ---------- Auth ----------
+
+    private async Task HandleLogout()
+    {
+        await Auth.LogoutAsync();
+        await LoadSavedStateAsync();   // show the guest's state, not the previous user's
+    }
 }

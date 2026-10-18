@@ -1,0 +1,50 @@
+@page "/login"
+@using MealPrep.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<div class="app-container">
+    <h1>Login</h1>
+
+    <div class="auth-form">
+        <label>Email</label>
+        <input @bind="Email" />
+
+        <label>Password</label>
+        <input type="password" @bind="Password" />
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="recipe-error">@ErrorMessage</div>
+        }
+
+        <button @onclick="HandleLogin">Log In</button>
+    </div>
+
+    <div class="auth-switch-link">
+        Don't have an account? <a href="/signup">Register now</a>
+    </div>
+
+    <div class="auth-switch-link">
+        <a href="/">Keep Browsing</a>
+    </div>
+</div>
+
+@code {
+    private string Email = "";
+    private string Password = "";
+    private string ErrorMessage = "";
+
+    private async Task HandleLogin()
+    {
+        var error = new ErrorBox();
+        if (await Auth.LoginAsync(Email, Password, error))
+        {
+            Nav.NavigateTo("/");
+        }
+        else
+        {
+            ErrorMessage = error.Message;
+        }
+    }
+}

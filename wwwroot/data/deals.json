@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "itemId": 1,
+    "supermarket": "PAK'nSAVE",
+    "dealPrice": 2.49,
+    "expiresOn": "2026-12-31T23:59:59",
+    "updatedAt": "2026-10-08T09:00:00"
+  },
+  {
+    "id": 2,
+    "itemId": 2,
+    "supermarket": "New World",
+    "dealPrice": 3.79,
+    "expiresOn": "2026-12-31T23:59:59",
+    "updatedAt": "2026-10-07T09:00:00"
+  },
+  {
+    "id": 3,
+    "itemId": 3,
+    "supermarket": "Woolworths",
+    "dealPrice": 2.29,
+    "expiresOn": "2026-12-31T23:59:59",
+    "updatedAt": "2026-10-06T09:00:00"
+  }
+]
