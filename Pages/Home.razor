@@ -291,9 +291,9 @@
 
             <hr class="sidebar-divider" />
 
-            <!-- Saved recipes -->
+            <!-- Weekly meal plan (FR: schedule recipes for a day of the week) -->
             <div class="recipes-section">
-                <h2>Saved Recipes</h2>
+                <h2>Weekly Meal Plan</h2>
 
                 @if (!Recipes.Any())
                 {
@@ -301,18 +301,60 @@
                 }
                 else
                 {
-                    <div class="recipe-list">
-                        @foreach (var recipe in Recipes.OrderBy(r => r.Date))
+                    <div class="recipe-week">
+                        @foreach (var day in WeekDays)
                         {
-                            <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
-                                <div class="recipe-card-name">@recipe.Name</div>
-                                <div class="recipe-card-date">
-                                    @(recipe.Date.HasValue ? recipe.Date.Value.ToString("ddd, MMM d") : "No date set")
-                                </div>
-                                <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                            var dayRecipes = Recipes.Where(r => r.Day == day && ShowsInWeeklyPlan(r)).OrderBy(r => r.Name).ToList();
+
+                            <div class="recipe-day-group @(day == DateTime.Today.DayOfWeek ? "today" : "")">
+                                <div class="recipe-day-heading">@day</div>
+
+                                @if (!dayRecipes.Any())
+                                {
+                                    <div class="recipe-day-empty">—</div>
+                                }
+
+                                @foreach (var recipe in dayRecipes)
+                                {
+                                    <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                                        <div class="recipe-card-name">@recipe.Name</div>
+                                        @if (recipe.Date.HasValue)
+                                        {
+                                            <div class="recipe-card-date">📅 @recipe.Date.Value.ToString("ddd d MMM")</div>
+                                        }
+                                        <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @{
+                            var unscheduled = Recipes.Where(r => r.Day is null).OrderBy(r => r.Name).ToList();
+                        }
+                        @if (unscheduled.Any())
+                        {
+                            <div class="recipe-day-group">
+                                <div class="recipe-day-heading">Not scheduled</div>
+                                @foreach (var recipe in unscheduled)
+                                {
+                                    <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                                        <div class="recipe-card-name">@recipe.Name</div>
+                                        <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
+
+                    @if (OtherDatedRecipesCount > 0)
+                    {
+                        <div class="recipe-other-dates">
+                            <span>
+                                @OtherDatedRecipesCount @(OtherDatedRecipesCount == 1 ? "recipe is" : "recipes are") on other dates
+                            </span>
+                            <button class="edit-ingredients-btn" @onclick="OpenCalendar">View calendar</button>
+                        </div>
+                    }
                 }
             </div>
 
@@ -320,6 +362,73 @@
     </aside>
 
 </div>
+
+@* Sticky calendar button *@
+<button class="calendar-fab" aria-label="Open meal calendar" title="Meal calendar" @onclick="OpenCalendar">
+    📅
+    @if (UpcomingRecipesCount > 0)
+    {
+        <span class="calendar-fab-count">@UpcomingRecipesCount</span>
+    }
+</button>
+
+@* Meal calendar (month view) *@
+@if (ShowCalendar)
+{
+    <div class="modal-overlay">
+        <div class="modal-box calendar-modal-box" role="dialog" aria-label="Meal calendar">
+            <div class="calendar-header">
+                <button class="calendar-nav-btn" aria-label="Previous month" @onclick="PrevMonth">‹</button>
+                <h3 class="calendar-title">@CalendarMonth.ToString("MMMM yyyy")</h3>
+                <button class="calendar-nav-btn" aria-label="Next month" @onclick="NextMonth">›</button>
+            </div>
+
+            <div class="calendar-toolbar">
+                <button class="edit-ingredients-btn" @onclick="GoToToday">Today</button>
+                <label class="calendar-toggle">
+                    <input type="checkbox" @bind="ShowWeeklyInCalendar" />
+                    Show weekly repeats
+                </label>
+            </div>
+
+            <div class="calendar-grid">
+                @foreach (var wd in WeekDays)
+                {
+                    <div class="calendar-weekday">@wd.ToString().Substring(0, 3)</div>
+                }
+
+                @foreach (var date in CalendarDays)
+                {
+                    var dated = DatedRecipesOn(date);
+                    var weekly = ShowWeeklyInCalendar ? WeeklyRecipesOn(date) : new List<Recipe>();
+
+                    <div class="calendar-cell @(date.Month != CalendarMonth.Month ? "other-month" : "") @(date.Date == DateTime.Today ? "today" : "")">
+                        <div class="calendar-date-num">@date.Day</div>
+
+                        @foreach (var r in dated)
+                        {
+                            <button class="cal-chip" title="@r.Name" @onclick="() => OpenRecipeFromCalendar(r)">@r.Name</button>
+                        }
+                        @foreach (var r in weekly)
+                        {
+                            <button class="cal-chip cal-chip-weekly" title="@r.Name (every @r.Day)"
+                                    @onclick="() => OpenRecipeFromCalendar(r)">↻ @r.Name</button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="calendar-legend">
+                <span><span class="legend-swatch legend-dated"></span>On a specific date</span>
+                <span><span class="legend-swatch legend-weekly"></span>↻ Repeats every week</span>
+            </div>
+
+            <div class="modal-actions">
+                <button @onclick="CloseCalendar">Close</button>
+            </div>
+        </div>
+    </div>
+}
 
 @* Over-budget confirmation modal *@
     @if (PendingAction is not null)
@@ -353,21 +462,113 @@
             </div>
 
             <div class="recipe-form-field">
-                <label for="recipe-date">Day to make it</label>
-                <input type="date" id="recipe-date" @bind="RecipeDateInput" />
+                <label for="recipe-day">Day of the week</label>
+                <div class="recipe-day-row">
+                    <select id="recipe-day" @bind="RecipeDayInput" disabled="@RecipeDateInput.HasValue">
+                        <option value="">Choose a day…</option>
+                        @foreach (var d in WeekDays)
+                        {
+                            <option value="@d">@d</option>
+                        }
+                    </select>
+                    <button type="button" class="calendar-icon-btn @(ShowDatePicker ? "active" : "")"
+                            aria-label="@CalendarIconLabel" title="@CalendarIconLabel"
+                            aria-expanded="@(ShowDatePicker ? "true" : "false")"
+                            @onclick="ToggleDatePicker">
+                        📅
+                    </button>
+                </div>
+
+                @if (ShowDatePicker)
+                {
+                    <div class="recipe-date-row">
+                        <input type="date" id="recipe-date" aria-label="Specific date"
+                               value="@(RecipeDateInput?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))"
+                               @onchange="OnRecipeDateChanged" />
+                        @if (RecipeDateInput.HasValue)
+                        {
+                            <button class="edit-ingredients-btn" @onclick="ClearRecipeDate">Clear date</button>
+                        }
+                    </div>
+                    <div class="recipe-date-hint">
+                        @if (RecipeDateInput.HasValue)
+                        {
+                            <text>Only on @RecipeDateInput.Value.ToString("dddd d MMMM yyyy"). Clear the date to repeat every week instead.</text>
+                        }
+                        else
+                        {
+                            <text>Pick a date for a one-off meal, or leave it empty to repeat every week.</text>
+                        }
+                    </div>
+                }
             </div>
 
             <div class="recipe-ingredients-preview">
-                <label>Ingredients</label>
-                <ul>
-                    @{
-                        var ingredientsToShow = EditingRecipe is null ? Cart : EditingRecipe.Ingredients;
-                    }
-                    @foreach (var line in ingredientsToShow)
+                <div class="recipe-ingredients-header">
+                    <label>Ingredients</label>
+                    @if (EditingRecipe is not null && !EditingIngredients)
                     {
-                        <li>@line.Name (x@(line.Qty))</li>
+                        <button class="edit-ingredients-btn" @onclick="StartEditIngredients">Edit</button>
                     }
-                </ul>
+                    @if (EditingIngredients)
+                    {
+                        <button class="edit-ingredients-btn" @onclick="DiscardIngredientEdits">Discard changes</button>
+                    }
+                </div>
+
+                @if (EditingIngredients)
+                {
+                    <div class="ingredient-edit-list">
+                        @if (!IngredientDraft.Any())
+                        {
+                            <div class="ingredient-edit-empty">No ingredients. Add at least one below.</div>
+                        }
+
+                        @foreach (var line in IngredientDraft)
+                        {
+                            <div class="ingredient-edit-row">
+                                <span class="ingredient-edit-name">@line.Name</span>
+                                <div class="cart-item-qty-controls">
+                                    <button class="qty-btn" aria-label="Decrease quantity of @line.Name"
+                                            disabled="@(line.Qty <= 1)" @onclick="() => ChangeDraftQty(line, -1)">
+                                        −
+                                    </button>
+                                    <span class="cart-item-qty"><span class="visually-hidden">Qty: </span>@line.Qty</span>
+                                    <button class="qty-btn" aria-label="Increase quantity of @line.Name"
+                                            disabled="@(line.Qty >= MaxQty)" @onclick="() => ChangeDraftQty(line, 1)">
+                                        +
+                                    </button>
+                                </div>
+                                <button class="remove-btn" aria-label="Remove @line.Name"
+                                        @onclick="() => RemoveDraftIngredient(line)">✕</button>
+                            </div>
+                        }
+
+                        <div class="ingredient-add-row">
+                            <select aria-label="Choose an ingredient to add" @bind="AddIngredientItemId">
+                                <option value="">Add an ingredient…</option>
+                                @foreach (var gi in AllItems.OrderBy(i => i.Name))
+                                {
+                                    <option value="@gi.Id">@gi.Emoji @gi.Name</option>
+                                }
+                            </select>
+                            <button class="add-btn" disabled="@(AddIngredientItemId is null)"
+                                    @onclick="AddDraftIngredient">Add</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <ul>
+                        @{
+                            var ingredientsToShow = EditingRecipe is null ? Cart : EditingRecipe.Ingredients;
+                        }
+                        @foreach (var line in ingredientsToShow)
+                        {
+                            <li>@line.Name (x@(line.Qty))</li>
+                        }
+                    </ul>
+                }
             </div>
 
             @if (!string.IsNullOrEmpty(RecipeErrorMessage))
@@ -379,10 +580,27 @@
                 <button @onclick="SaveRecipe">@(EditingRecipe is null ? "Save Recipe" : "Save Changes")</button>
                 @if (EditingRecipe is not null)
                 {
-                    <button @onclick="DuplicateRecipeToNewDay">Save on This Day Too</button>
+                    <button @onclick="DuplicateRecipeToNewDay">Save a Copy on This Day</button>
                     <button class="danger-btn" @onclick="DeleteRecipe">Delete</button>
                 }
                 <button @onclick="CloseRecipeModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+@* Override or save-as-new prompt, shown when saving changed ingredients *@
+@if (ShowOverwritePrompt && EditingRecipe is not null)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <p>
+                You changed the ingredients of <strong>@EditingRecipe.Name</strong>.
+                Do you want to override this recipe, or save the changes as a new recipe?
+            </p>
+            <div class="modal-actions">
+                <button @onclick="OverwriteRecipe">Override recipe</button>
+                <button @onclick="SaveAsNewRecipe">Create new recipe</button>
+                <button @onclick="CancelOverwritePrompt">Cancel</button>
             </div>
         </div>
     </div>
@@ -460,9 +678,9 @@
         await LocalStorage.SetItemAsync($"{KeyPrefix}_deals_seen", DealsLastSeen);
     }
 
-    // ---------- For Demo and Presentation Use Only) ----------
+    // ---------- For Demo and Presentation Use Only ----------
     // Visit /?demo=true to show the demo buttons.
-    // deals.json is untouched, and a page reload returns to the file's contents.        
+    // deals.json is untouched, and a page reload returns to the file's contents.
 
     [Parameter, SupplyParameterFromQuery(Name = "demo")]
     public string? Demo { get; set; }
@@ -546,8 +764,18 @@
         Recipes = await LocalStorage.GetItemAsync<List<Recipe>>($"{KeyPrefix}_recipes") ?? new();
         Budget = await LocalStorage.GetItemAsync<decimal?>($"{KeyPrefix}_budget");
         BudgetInput = Budget?.ToString() ?? "";
-        DealsLastSeen = await LocalStorage.GetItemAsync<DateTime?>($"{KeyPrefix}_deals_seen");   // new
+        DealsLastSeen = await LocalStorage.GetItemAsync<DateTime?>($"{KeyPrefix}_deals_seen");
 
+        // Recipes saved before day-of-week scheduling only had a calendar date:
+        // keep the date and fill in the weekday it falls on.
+        var migrated = false;
+        foreach (var r in Recipes.Where(r => r.Day is null && r.Date.HasValue))
+        {
+            r.Day = r.Date!.Value.DayOfWeek;
+            migrated = true;
+        }
+        if (migrated)
+            await SaveRecipesAsync();
     }
 
     private async Task SaveCartAsync() => await LocalStorage.SetItemAsync($"{KeyPrefix}_cart", Cart);
@@ -829,15 +1057,127 @@
         ShowResetConfirm = false;
     }
 
-    // ---------- Recipes ----------
+    // ---------- Recipes / weekly meal plan ----------
+    // Users schedule each recipe for a day of the week (Monday–Sunday).
 
     private List<Recipe> Recipes = new();
+
+    // Monday-first week, matching NZ convention.
+    private static readonly DayOfWeek[] WeekDays =
+    {
+        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday,
+        DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
+    };
 
     private bool ShowRecipeModal = false;
     private Recipe? EditingRecipe = null;   // null => creating a new recipe from the current cart
     private string RecipeNameInput = "";
-    private DateTime? RecipeDateInput;
+    private DayOfWeek? RecipeDayInput;
     private string RecipeErrorMessage = "";
+
+    // ---------- Specific date (optional) ----------
+    // A recipe with a Date is a one-off on that date; its Day is set from the date.
+    // Without a Date it repeats every week on its Day.
+
+    private DateTime? RecipeDateInput;
+    private bool ShowDatePicker = false;
+
+    private string CalendarIconLabel =>
+        !ShowDatePicker ? "Pick a specific date" :
+        RecipeDateInput.HasValue ? "Remove specific date" :
+        "Hide date picker";
+
+    private void ToggleDatePicker()
+    {
+        if (ShowDatePicker)
+        {
+            // Closing the picker removes the date, so the recipe repeats weekly again.
+            RecipeDateInput = null;
+            ShowDatePicker = false;
+        }
+        else
+        {
+            ShowDatePicker = true;
+        }
+    }
+
+    private void ClearRecipeDate() => RecipeDateInput = null;
+
+    private void OnRecipeDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var date))
+        {
+            RecipeDateInput = date;
+            RecipeDayInput = date.DayOfWeek;   // keep the weekday in sync with the date
+        }
+        else
+        {
+            RecipeDateInput = null;
+        }
+    }
+
+    // ---------- Meal calendar (sticky button) ----------
+    // The weekly plan shows this week only; the calendar shows any month, so
+    // recipes on dates outside this week can still be found.
+
+    private static int WeekOrder(DayOfWeek d) => ((int)d + 6) % 7;   // Monday = 0 ... Sunday = 6
+
+    private static DateTime StartOfThisWeek => DateTime.Today.AddDays(-WeekOrder(DateTime.Today.DayOfWeek));
+    private static DateTime EndOfThisWeek => StartOfThisWeek.AddDays(6);
+
+    private static bool IsInCurrentWeek(DateTime date) =>
+        date.Date >= StartOfThisWeek && date.Date <= EndOfThisWeek;
+
+    // Weekly recipes always show in the weekly plan; dated ones only when the date is this week.
+    private static bool ShowsInWeeklyPlan(Recipe r) => r.Date is null || IsInCurrentWeek(r.Date.Value);
+
+    private int OtherDatedRecipesCount => Recipes.Count(r => r.Date.HasValue && !IsInCurrentWeek(r.Date.Value));
+    private int UpcomingRecipesCount => Recipes.Count(r => r.Date.HasValue && r.Date.Value.Date > EndOfThisWeek);
+
+    private bool ShowCalendar = false;
+    private bool ShowWeeklyInCalendar = true;
+    private bool ReopenCalendarAfterEdit = false;   // return to the calendar after editing from it
+    private DateTime CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    // Every date shown in the month grid, padded to full Monday–Sunday weeks.
+    private IEnumerable<DateTime> CalendarDays
+    {
+        get
+        {
+            var start = CalendarMonth.AddDays(-WeekOrder(CalendarMonth.DayOfWeek));
+            var lastOfMonth = CalendarMonth.AddMonths(1).AddDays(-1);
+            var end = lastOfMonth.AddDays(6 - WeekOrder(lastOfMonth.DayOfWeek));
+
+            for (var d = start; d <= end; d = d.AddDays(1))
+                yield return d;
+        }
+    }
+
+    private List<Recipe> DatedRecipesOn(DateTime date) =>
+        Recipes.Where(r => r.Date.HasValue && r.Date.Value.Date == date.Date).OrderBy(r => r.Name).ToList();
+
+    private List<Recipe> WeeklyRecipesOn(DateTime date) =>
+        Recipes.Where(r => r.Date is null && r.Day == date.DayOfWeek).OrderBy(r => r.Name).ToList();
+
+    private void OpenCalendar()
+    {
+        CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+        ShowCalendar = true;
+    }
+
+    private void CloseCalendar() => ShowCalendar = false;
+    private void PrevMonth() => CalendarMonth = CalendarMonth.AddMonths(-1);
+    private void NextMonth() => CalendarMonth = CalendarMonth.AddMonths(1);
+    private void GoToToday() => CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    private void OpenRecipeFromCalendar(Recipe recipe)
+    {
+        ShowCalendar = false;
+        ReopenCalendarAfterEdit = true;
+        OpenEditRecipeModal(recipe);
+    }
 
     private void OpenCreateRecipeModal()
     {
@@ -846,7 +1186,9 @@
 
         EditingRecipe = null;
         RecipeNameInput = "";
-        RecipeDateInput = DateTime.Today;
+        RecipeDayInput = DateTime.Today.DayOfWeek;   // default to today's weekday
+        RecipeDateInput = null;
+        ShowDatePicker = false;
         RecipeErrorMessage = "";
         ShowRecipeModal = true;
     }
@@ -855,16 +1197,157 @@
     {
         EditingRecipe = recipe;
         RecipeNameInput = recipe.Name;
+        RecipeDayInput = recipe.Day;
         RecipeDateInput = recipe.Date;
+        ShowDatePicker = recipe.Date.HasValue;
         RecipeErrorMessage = "";
+        EditingIngredients = false;
+        IngredientDraft = new();
         ShowRecipeModal = true;
     }
 
-    private async Task SaveRecipe()
+    // ---------- Editing a saved recipe's ingredients ----------
+    // Changes go into a draft copy. On save, the user chooses to override the
+    // original recipe or save the draft as a new recipe.
+
+    private bool EditingIngredients = false;
+    private List<ListLineItem> IngredientDraft = new();
+    private int? AddIngredientItemId;
+    private bool ShowOverwritePrompt = false;
+
+    private static List<ListLineItem> CopyIngredients(IEnumerable<ListLineItem> source) =>
+        source.Select(i => new ListLineItem
+        {
+            Id = i.Id,
+            Name = i.Name,
+            UnitPrice = i.UnitPrice,
+            Qty = i.Qty
+        }).ToList();
+
+    private void StartEditIngredients()
+    {
+        if (EditingRecipe is null)
+            return;
+
+        IngredientDraft = CopyIngredients(EditingRecipe.Ingredients);
+        AddIngredientItemId = null;
+        EditingIngredients = true;
+    }
+
+    private void DiscardIngredientEdits()
+    {
+        EditingIngredients = false;
+        IngredientDraft = new();
+        AddIngredientItemId = null;
+        RecipeErrorMessage = "";
+    }
+
+    private void ChangeDraftQty(ListLineItem line, int delta) =>
+        line.Qty = Math.Clamp(line.Qty + delta, 1, MaxQty);
+
+    private void RemoveDraftIngredient(ListLineItem line) => IngredientDraft.Remove(line);
+
+    private void AddDraftIngredient()
+    {
+        var item = AllItems.FirstOrDefault(i => i.Id == AddIngredientItemId);
+        if (item is null)
+            return;
+
+        var existing = IngredientDraft.FirstOrDefault(l => l.Id == item.Id);
+        if (existing is not null)
+        {
+            existing.Qty = Math.Min(existing.Qty + 1, MaxQty);
+        }
+        else
+        {
+            IngredientDraft.Add(new ListLineItem
+            {
+                Id = item.Id,
+                Name = item.Name,
+                UnitPrice = item.Price,
+                Qty = 1
+            });
+        }
+
+        AddIngredientItemId = null;
+    }
+
+    // True when the draft differs from the saved recipe (added, removed or quantity changed).
+    private bool IngredientsChanged =>
+        EditingRecipe is not null && EditingIngredients &&
+        (IngredientDraft.Count != EditingRecipe.Ingredients.Count ||
+         IngredientDraft.Any(d => EditingRecipe.Ingredients.FirstOrDefault(o => o.Id == d.Id)?.Qty != d.Qty));
+
+    private async Task OverwriteRecipe()
+    {
+        if (EditingRecipe is null)
+            return;
+
+        EditingRecipe.Name = RecipeNameInput.Trim();
+        EditingRecipe.Day = RecipeDayInput;
+        EditingRecipe.Date = RecipeDateInput;
+        EditingRecipe.Ingredients = CopyIngredients(IngredientDraft);
+
+        ShowOverwritePrompt = false;
+        await SaveRecipesAsync();
+        CloseRecipeModal();
+    }
+
+    private async Task SaveAsNewRecipe()
+    {
+        if (EditingRecipe is null)
+            return;
+
+        // The original recipe is left untouched.
+        Recipes.Add(new Recipe
+        {
+            Name = RecipeNameInput.Trim(),
+            Day = RecipeDayInput,
+            Date = RecipeDateInput,
+            Ingredients = CopyIngredients(IngredientDraft)
+        });
+
+        ShowOverwritePrompt = false;
+        await SaveRecipesAsync();
+        CloseRecipeModal();
+    }
+
+    private void CancelOverwritePrompt() => ShowOverwritePrompt = false;   // back to the edit popup, draft kept
+
+    // Shared validation for save and duplicate. Returns false and sets the error if invalid.
+    private bool ValidateRecipeForm()
     {
         if (string.IsNullOrWhiteSpace(RecipeNameInput))
         {
             RecipeErrorMessage = "Please give the recipe a name.";
+            return false;
+        }
+
+        if (RecipeDayInput is null)
+        {
+            RecipeErrorMessage = "Please choose a day of the week.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task SaveRecipe()
+    {
+        if (!ValidateRecipeForm())
+            return;
+
+        // Ingredients were edited: ask whether to override or create a new recipe.
+        if (IngredientsChanged)
+        {
+            if (!IngredientDraft.Any())
+            {
+                RecipeErrorMessage = "A recipe needs at least one ingredient.";
+                return;
+            }
+
+            RecipeErrorMessage = "";
+            ShowOverwritePrompt = true;
             return;
         }
 
@@ -874,6 +1357,7 @@
             var newRecipe = new Recipe
             {
                 Name = RecipeNameInput.Trim(),
+                Day = RecipeDayInput,
                 Date = RecipeDateInput,
                 Ingredients = Cart.Select(c => new ListLineItem
                 {
@@ -890,6 +1374,7 @@
         {
             // Editing an existing, previously-saved recipe
             EditingRecipe.Name = RecipeNameInput.Trim();
+            EditingRecipe.Day = RecipeDayInput;
             EditingRecipe.Date = RecipeDateInput;
         }
 
@@ -902,19 +1387,17 @@
         if (EditingRecipe is null)
             return;
 
-        if (string.IsNullOrWhiteSpace(RecipeNameInput))
-        {
-            RecipeErrorMessage = "Please give the recipe a name.";
+        if (!ValidateRecipeForm())
             return;
-        }
 
-        // Brand-new, independent recipe with the same ingredients, using the name/date
+        // Brand-new, independent recipe with the same ingredients, using the name/day
         // currently in the form — the original is left untouched.
         var copy = new Recipe
         {
             Name = RecipeNameInput.Trim(),
+            Day = RecipeDayInput,
             Date = RecipeDateInput,
-            Ingredients = EditingRecipe.Ingredients.Select(i => new ListLineItem
+            Ingredients = (EditingIngredients ? IngredientDraft : EditingRecipe.Ingredients).Select(i => new ListLineItem
             {
                 Id = i.Id,
                 Name = i.Name,
@@ -942,13 +1425,27 @@
         ShowRecipeModal = false;
         EditingRecipe = null;
         RecipeErrorMessage = "";
+        EditingIngredients = false;
+        IngredientDraft = new();
+        AddIngredientItemId = null;
+        ShowOverwritePrompt = false;
+        RecipeDateInput = null;
+        ShowDatePicker = false;
+
+        // Opened from the calendar: go back to it.
+        if (ReopenCalendarAfterEdit)
+        {
+            ReopenCalendarAfterEdit = false;
+            ShowCalendar = true;
+        }
     }
 
     public class Recipe
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = "";
-        public DateTime? Date { get; set; }
+        public DayOfWeek? Day { get; set; }          // the day of the week this meal is planned for
+        public DateTime? Date { get; set; }          // optional specific date (one-off); null = repeats every week on Day
         public List<ListLineItem> Ingredients { get; set; } = new();
     }
 
