@@ -27,6 +27,14 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      # The runner also has a newer SDK (.NET 10) that does not support the VSTest
+      # test runner our xunit.v3 tests use, so pin the build to the .NET 8 SDK.
+      - name: Use the .NET 8 SDK
+        run: |
+          v=$(dotnet --list-sdks | grep '^8\.' | tail -n1 | cut -d' ' -f1)
+          echo "{\"sdk\":{\"version\":\"$v\"}}" > global.json
+          echo "Pinned SDK:"; dotnet --version
+
       - name: "Gate 1: data sanity check (items.json, deals.json)"
         run: python3 scripts/check_data.py
 
