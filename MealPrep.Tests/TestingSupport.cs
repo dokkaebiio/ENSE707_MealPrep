@@ -13,15 +13,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 
 
-// Testing support classes for MealPrep.Tests. These are not tests themselves, but helpers used by the test classes.
-// Provides a fake HTTP backend, test data builders, and a base class for Home page tests that sets up services and common actions.
-// Uses a fake HttpClient to simulate responses for items.json and deals.json without making real HTTP requests.
-// Provides reusable helper methods for interacting with the Home page in tests, such as logging in, seeding spending history, and clicking buttons.
-// This file helps reduce code duplication across test classes and makes it easier to write focused tests for the MealPrep application.
 namespace MealPrep.Tests
 {
-    // Base class for every test that renders <Home>. Registers the services the
-    // page needs, so each test class only describes its own scenario.
+    
     public abstract class HomeTestBase : BunitContext
     {
         protected const string DefaultEmail = "tester@example.com";
