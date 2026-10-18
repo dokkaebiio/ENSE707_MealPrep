@@ -403,7 +403,12 @@
                     var weekly = ShowWeeklyInCalendar ? WeeklyRecipesOn(date) : new List<Recipe>();
 
                     <div class="calendar-cell @(date.Month != CalendarMonth.Month ? "other-month" : "") @(date.Date == DateTime.Today ? "today" : "")">
-                        <div class="calendar-date-num">@date.Day</div>
+                        <div class="calendar-cell-header">
+                            <span class="calendar-date-num">@date.Day</span>
+                            <button class="cal-add-btn" title="Add recipe"
+                                    aria-label="Add a recipe on @date.ToString("dddd d MMMM")"
+                                    @onclick="() => OpenCreateRecipeFromCalendar(date)">+</button>
+                        </div>
 
                         @foreach (var r in dated)
                         {
@@ -421,6 +426,7 @@
             <div class="calendar-legend">
                 <span><span class="legend-swatch legend-dated"></span>On a specific date</span>
                 <span><span class="legend-swatch legend-weekly"></span>↻ Repeats every week</span>
+                <span>Press + on a day to add a recipe</span>
             </div>
 
             <div class="modal-actions">
@@ -474,12 +480,13 @@
                     <button type="button" class="calendar-icon-btn @(ShowDatePicker ? "active" : "")"
                             aria-label="@CalendarIconLabel" title="@CalendarIconLabel"
                             aria-expanded="@(ShowDatePicker ? "true" : "false")"
+                            disabled="@RepeatWeeklyInput"
                             @onclick="ToggleDatePicker">
                         📅
                     </button>
                 </div>
 
-                @if (ShowDatePicker)
+                @if (ShowDatePicker && !RepeatWeeklyInput)
                 {
                     <div class="recipe-date-row">
                         <input type="date" id="recipe-date" aria-label="Specific date"
@@ -490,17 +497,14 @@
                             <button class="edit-ingredients-btn" @onclick="ClearRecipeDate">Clear date</button>
                         }
                     </div>
-                    <div class="recipe-date-hint">
-                        @if (RecipeDateInput.HasValue)
-                        {
-                            <text>Only on @RecipeDateInput.Value.ToString("dddd d MMMM yyyy"). Clear the date to repeat every week instead.</text>
-                        }
-                        else
-                        {
-                            <text>Pick a date for a one-off meal, or leave it empty to repeat every week.</text>
-                        }
-                    </div>
                 }
+
+                <label class="recipe-weekly-toggle">
+                    <input type="checkbox" checked="@RepeatWeeklyInput" @onchange="OnRepeatWeeklyChanged" />
+                    Repeat every week
+                </label>
+
+                <div class="recipe-date-hint">@ScheduleHint</div>
             </div>
 
             <div class="recipe-ingredients-preview">
@@ -510,7 +514,7 @@
                     {
                         <button class="edit-ingredients-btn" @onclick="StartEditIngredients">Edit</button>
                     }
-                    @if (EditingIngredients)
+                    @if (EditingIngredients && EditingRecipe is not null)
                     {
                         <button class="edit-ingredients-btn" @onclick="DiscardIngredientEdits">Discard changes</button>
                     }
@@ -1082,7 +1086,44 @@
     private DateTime? RecipeDateInput;
     private bool ShowDatePicker = false;
 
+    // Recipes are one-off by default. Ticking "Repeat every week" saves it as weekly (no date).
+    private bool RepeatWeeklyInput = false;
+
+    // Next date (today or later) that falls on the given weekday.
+    private static DateTime? NextOccurrence(DayOfWeek? day) =>
+        day is null ? null
+                    : DateTime.Today.AddDays(((int)day.Value - (int)DateTime.Today.DayOfWeek + 7) % 7);
+
+    // What actually gets saved:
+    //   weekly   -> no date, repeats on the chosen day
+    //   one-off  -> the picked date, or the next date on the chosen day
+    private DateTime? ResolvedDate =>
+        RepeatWeeklyInput ? null : (RecipeDateInput ?? NextOccurrence(RecipeDayInput));
+
+    private DayOfWeek? ResolvedDay => ResolvedDate?.DayOfWeek ?? RecipeDayInput;
+
+    private string ScheduleHint =>
+        RepeatWeeklyInput
+            ? (RecipeDayInput.HasValue ? $"Repeats every {RecipeDayInput}." : "Choose a day to repeat every week.")
+            : ResolvedDate.HasValue
+                ? $"Saves for {ResolvedDate.Value:dddd d MMMM yyyy} only." +
+                  (RecipeDateInput.HasValue ? "" : " Use 📅 to pick a later date.")
+                : "Choose a day, or use 📅 to pick a date.";
+
+    private void OnRepeatWeeklyChanged(ChangeEventArgs e)
+    {
+        RepeatWeeklyInput = e.Value is bool ticked && ticked;
+
+        // Weekly recipes don't have a date; the weekday stays as it was.
+        if (RepeatWeeklyInput)
+        {
+            RecipeDateInput = null;
+            ShowDatePicker = false;
+        }
+    }
+
     private string CalendarIconLabel =>
+        RepeatWeeklyInput ? "Untick 'Repeat every week' to pick a date" :
         !ShowDatePicker ? "Pick a specific date" :
         RecipeDateInput.HasValue ? "Remove specific date" :
         "Hide date picker";
@@ -1091,7 +1132,7 @@
     {
         if (ShowDatePicker)
         {
-            // Closing the picker removes the date, so the recipe repeats weekly again.
+            // Closing the picker removes the date; the recipe then goes on the next chosen weekday.
             RecipeDateInput = null;
             ShowDatePicker = false;
         }
@@ -1179,6 +1220,28 @@
         OpenEditRecipeModal(recipe);
     }
 
+    // "+" on a calendar day: new recipe on that date. Ingredients start from the
+    // cart (which may be empty) and can be edited before saving.
+    private void OpenCreateRecipeFromCalendar(DateTime date)
+    {
+        ShowCalendar = false;
+        ReopenCalendarAfterEdit = true;
+
+        EditingRecipe = null;
+        RecipeNameInput = "";
+        RecipeDateInput = date.Date;
+        RecipeDayInput = date.DayOfWeek;
+        RepeatWeeklyInput = false;
+        ShowDatePicker = true;
+        RecipeErrorMessage = "";
+
+        IngredientDraft = CopyIngredients(Cart);
+        AddIngredientItemId = null;
+        EditingIngredients = true;
+
+        ShowRecipeModal = true;
+    }
+
     private void OpenCreateRecipeModal()
     {
         if (!Cart.Any())
@@ -1189,6 +1252,7 @@
         RecipeDayInput = DateTime.Today.DayOfWeek;   // default to today's weekday
         RecipeDateInput = null;
         ShowDatePicker = false;
+        RepeatWeeklyInput = false;   // one-off by default
         RecipeErrorMessage = "";
         ShowRecipeModal = true;
     }
@@ -1200,6 +1264,7 @@
         RecipeDayInput = recipe.Day;
         RecipeDateInput = recipe.Date;
         ShowDatePicker = recipe.Date.HasValue;
+        RepeatWeeklyInput = recipe.Day.HasValue && !recipe.Date.HasValue;   // no date = weekly
         RecipeErrorMessage = "";
         EditingIngredients = false;
         IngredientDraft = new();
@@ -1284,8 +1349,8 @@
             return;
 
         EditingRecipe.Name = RecipeNameInput.Trim();
-        EditingRecipe.Day = RecipeDayInput;
-        EditingRecipe.Date = RecipeDateInput;
+        EditingRecipe.Day = ResolvedDay;
+        EditingRecipe.Date = ResolvedDate;
         EditingRecipe.Ingredients = CopyIngredients(IngredientDraft);
 
         ShowOverwritePrompt = false;
@@ -1302,8 +1367,8 @@
         Recipes.Add(new Recipe
         {
             Name = RecipeNameInput.Trim(),
-            Day = RecipeDayInput,
-            Date = RecipeDateInput,
+            Day = ResolvedDay,
+            Date = ResolvedDate,
             Ingredients = CopyIngredients(IngredientDraft)
         });
 
@@ -1353,19 +1418,21 @@
 
         if (EditingRecipe is null)
         {
-            // Creating a brand-new recipe from a snapshot of the current cart
+            // Creating a brand-new recipe: from the edited ingredient list (calendar "+"),
+            // otherwise from a snapshot of the current cart
+            var ingredients = EditingIngredients ? CopyIngredients(IngredientDraft) : CopyIngredients(Cart);
+            if (!ingredients.Any())
+            {
+                RecipeErrorMessage = "A recipe needs at least one ingredient.";
+                return;
+            }
+
             var newRecipe = new Recipe
             {
                 Name = RecipeNameInput.Trim(),
-                Day = RecipeDayInput,
-                Date = RecipeDateInput,
-                Ingredients = Cart.Select(c => new ListLineItem
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    UnitPrice = c.UnitPrice,
-                    Qty = c.Qty
-                }).ToList()
+                Day = ResolvedDay,
+                Date = ResolvedDate,
+                Ingredients = ingredients
             };
 
             Recipes.Add(newRecipe);
@@ -1374,8 +1441,8 @@
         {
             // Editing an existing, previously-saved recipe
             EditingRecipe.Name = RecipeNameInput.Trim();
-            EditingRecipe.Day = RecipeDayInput;
-            EditingRecipe.Date = RecipeDateInput;
+            EditingRecipe.Day = ResolvedDay;
+            EditingRecipe.Date = ResolvedDate;
         }
 
         await SaveRecipesAsync();
@@ -1395,8 +1462,8 @@
         var copy = new Recipe
         {
             Name = RecipeNameInput.Trim(),
-            Day = RecipeDayInput,
-            Date = RecipeDateInput,
+            Day = ResolvedDay,
+            Date = ResolvedDate,
             Ingredients = (EditingIngredients ? IngredientDraft : EditingRecipe.Ingredients).Select(i => new ListLineItem
             {
                 Id = i.Id,
@@ -1431,6 +1498,7 @@
         ShowOverwritePrompt = false;
         RecipeDateInput = null;
         ShowDatePicker = false;
+        RepeatWeeklyInput = false;
 
         // Opened from the calendar: go back to it.
         if (ReopenCalendarAfterEdit)

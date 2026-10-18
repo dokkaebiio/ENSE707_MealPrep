@@ -1484,6 +1484,59 @@ button.calendar-icon-btn {
     color: #666666;
 }
 
+/* "Repeat every week" tick box in the recipe popup */
+.recipe-weekly-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+.recipe-form-field .recipe-weekly-toggle input {
+    width: 18px;
+    height: 18px;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    accent-color: #2E5B8A;
+    cursor: pointer;
+}
+
+button.calendar-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Calendar day header: date number + "add recipe" button */
+.calendar-cell-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2px;
+}
+
+button.cal-add-btn {
+    width: 22px;
+    height: 22px;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #2E5B8A;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+    button.cal-add-btn:hover,
+    button.cal-add-btn:focus-visible {
+        background: #EAF1F8;
+    }
+
 /* Weekly plan: date on dated recipes, and the "other dates" note */
 
 .recipe-card-date {
@@ -1556,6 +1609,19 @@ button.calendar-icon-btn {
     background: #26303B;
 }
 
+.app-root.dark button.cal-add-btn {
+    color: #8AB4F8;
+}
+
+    .app-root.dark button.cal-add-btn:hover,
+    .app-root.dark button.cal-add-btn:focus-visible {
+        background: #26303B;
+    }
+
+.app-root.dark .recipe-form-field .recipe-weekly-toggle input {
+    accent-color: #8AB4F8;
+}
+
 .app-root.dark .legend-weekly {
     background: #26303B;
     border-color: #8AB4F8;
@@ -1579,6 +1645,12 @@ button.calendar-icon-btn {
     button.cal-chip {
         font-size: 0.6rem;
         padding: 1px 3px;
+    }
+
+    button.cal-add-btn {
+        width: 18px;
+        height: 18px;
+        font-size: 0.85rem;
     }
 }
 
