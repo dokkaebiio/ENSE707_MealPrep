@@ -4,9 +4,11 @@ using System.Text;
 using System.Text.Json;
 using Blazored.LocalStorage;
 using Bunit;
+using MealPrep.Layout;
 using MealPrep.Models;
 using MealPrep.Pages;
 using MealPrep.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 
 
@@ -78,7 +80,16 @@ namespace MealPrep.Tests
             Services.AddBlazoredLocalStorage();
             Services.AddScoped<AuthService>();
             Services.AddScoped<SpendingHistoryService>();
+            Services.AddScoped<AccessibilitySettings>();
         }
+
+        // Renders a page inside MainLayout, which owns the accessibility settings (NFR5).
+        protected IRenderedComponent<MainLayout> RenderInLayout(Type pageType) =>
+            Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(b =>
+            {
+                b.OpenComponent(0, pageType);
+                b.CloseComponent();
+            })));
 
         // Replaces the fake items/deals data. Must be called before anything is
         // resolved from Services (LogInAsync) or Render<Home>() runs.

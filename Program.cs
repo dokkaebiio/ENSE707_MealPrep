@@ -16,10 +16,14 @@ builder.Services.AddScoped(sp => new HttpClient
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SpendingHistoryService>();
+builder.Services.AddScoped<AccessibilitySettings>();
 
 var host = builder.Build();
 
 var authService = host.Services.GetRequiredService<AuthService>();
 await authService.InitializeAsync();
+
+var accessibilitySettings = host.Services.GetRequiredService<AccessibilitySettings>();
+await accessibilitySettings.InitializeAsync();
 
 await host.RunAsync();

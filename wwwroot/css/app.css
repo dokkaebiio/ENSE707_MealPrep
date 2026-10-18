@@ -1053,6 +1053,14 @@ body:has(.app-root.dark) { background: #121212; }
 
 .app-root.dark .sidebar-divider { border-top-color: #333333; }
 
+.app-root.dark .auth-form {
+    background: #1E1E1E;
+    border-color: #333333;
+}
+
+.app-root.dark .auth-form label,
+.app-root.dark .auth-switch-link { color: #B0B0B0; }
+
 /* =========================================================
    Responsive layout (NFR2)
    ========================================================= */

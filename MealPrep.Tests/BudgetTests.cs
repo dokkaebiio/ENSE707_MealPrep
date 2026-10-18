@@ -130,7 +130,7 @@ namespace MealPrep.Tests
         [Fact]
         public void DarkModeToggle_AddsAndRemovesDarkClass()
         {
-            var cut = Render<Home>();
+            var cut = RenderInLayout(typeof(Home));
             Assert.Empty(cut.FindAll(".app-root.dark"));
 
             cut.Find(".theme-toggle").Click();
@@ -144,7 +144,7 @@ namespace MealPrep.Tests
         [Fact]
         public void TextSizeButtons_ChangeLevelAndRespectLimits()
         {
-            var cut = Render<Home>();
+            var cut = RenderInLayout(typeof(Home));
             Assert.NotEmpty(cut.FindAll(".app-root.text-0"));
             Assert.True(cut.Find(".text-smaller").HasAttribute("disabled"));
 
@@ -154,6 +154,22 @@ namespace MealPrep.Tests
             cut.Find(".text-larger").Click();
             Assert.NotEmpty(cut.FindAll(".app-root.text-2"));
             Assert.True(cut.Find(".text-larger").HasAttribute("disabled"));
+        }
+
+        // TC-025 (NFR5): accessibility settings are also available on the Login and Sign Up pages
+        [Theory]
+        [InlineData(typeof(Login))]
+        [InlineData(typeof(Signup))]
+        public void TC025_AuthPages_HaveWorkingAccessibilitySettings(Type pageType)
+        {
+            var cut = RenderInLayout(pageType);
+            Assert.NotEmpty(cut.FindAll(".auth-form"));   // the auth page itself rendered
+
+            cut.Find(".theme-toggle").Click();
+            Assert.NotEmpty(cut.FindAll(".app-root.dark"));
+
+            cut.Find(".text-larger").Click();
+            Assert.NotEmpty(cut.FindAll(".app-root.text-1"));
         }
 
         //TC-23 || FR3 || positive (single trip in history)
