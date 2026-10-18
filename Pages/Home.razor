@@ -178,183 +178,243 @@
 
             <!-- Budget planner -->
             <div class="budget-planner-section">
-                <h2>Budget Planner</h2>
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("budget") ? "false" : "true")"
+                            aria-controls="section-budget" @onclick="@(() => ToggleSection("budget"))">
+                        <span class="section-title">Budget Planner</span>
+                        @if (IsCollapsed("budget"))
+                        {
+                            <span class="section-summary">@BudgetStatusIcon @BudgetStatusText</span>
+                        }
+                        <svg class="section-chevron @(IsCollapsed("budget") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
 
-                <div class="budget-inputs">
-                    <label for="budget">Set your budget:</label>
-                    <input type="number" id="budget" placeholder="$0.00"
-                           @bind="BudgetInput" @bind:event="oninput" />
-                    <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
-                </div>
-
-                @if (Auth.CurrentUser is not null && SuggestedBudget.HasValue)
+                @if (!IsCollapsed("budget"))
                 {
-                    <div class="suggested-card">
-                        <div class="suggested-label">Suggested budget</div>
-                        <div class="suggested-row">
-                            <span class="suggested-amount">$@SuggestedBudget.Value.ToString("F2")</span>
-                            <button class="use-suggestion-btn" @onclick="UseSuggestedBudget">Use Budget</button>
-                        </div>
-                        <div class="suggested-footer">
-                            <span class="suggested-basis">
-                                Based on your last @TripsUsed shopping @(TripsUsed == 1 ? "trip" : "trips")
-                            </span>
-                            <button class="reset-history-btn" @onclick="ConfirmResetHistory">Reset</button>
-                        </div>
-                    </div>
-                }
+                    <div class="section-body" id="section-budget">
 
-                <div class="budget-summary">
-                    <div class="budget-line">
-                        <span class="budget-amount">
-                            Budget: @(Budget.HasValue ? $"${Budget:F2}" : "—")
-                        </span>
-                        <span class="status-badge status-@BudgetStatusClass budget-status-label">
-                            @BudgetStatusIcon @BudgetStatusText
-                        </span>
+                    <div class="budget-inputs">
+                        <label for="budget">Set your budget:</label>
+                        <input type="number" id="budget" placeholder="$0.00"
+                               @bind="BudgetInput" @bind:event="oninput" />
+                        <button class="set-budget-btn" @onclick="ApplyBudget">Set Budget</button>
                     </div>
-                    @if (Budget.HasValue)
+
+                    @if (Auth.CurrentUser is not null && SuggestedBudget.HasValue)
                     {
-                        <div class="progress-track" role="progressbar"
-                             aria-valuemin="0" aria-valuemax="100"
-                             aria-valuenow="@ProgressWidth"
-                             aria-label="@ProgressSummary" title="@ProgressSummary">
-                            <div class="progress-fill budget-@BudgetStatusClass"
-                                 style="width: @(ProgressWidth)%"></div>
+                        <div class="suggested-card">
+                            <div class="suggested-label">Suggested budget</div>
+                            <div class="suggested-row">
+                                <span class="suggested-amount">$@SuggestedBudget.Value.ToString("F2")</span>
+                                <button class="use-suggestion-btn" @onclick="UseSuggestedBudget">Use Budget</button>
+                            </div>
+                            <div class="suggested-footer">
+                                <span class="suggested-basis">
+                                    Based on your last @TripsUsed shopping @(TripsUsed == 1 ? "trip" : "trips")
+                                </span>
+                                <button class="reset-history-btn" @onclick="ConfirmResetHistory">Reset</button>
+                            </div>
                         </div>
                     }
-                </div>
+
+                    <div class="budget-summary">
+                        <div class="budget-line">
+                            <span class="budget-amount">
+                                Budget: @(Budget.HasValue ? $"${Budget:F2}" : "—")
+                            </span>
+                            <span class="status-badge status-@BudgetStatusClass budget-status-label">
+                                @BudgetStatusIcon @BudgetStatusText
+                            </span>
+                        </div>
+                        @if (Budget.HasValue)
+                        {
+                            <div class="progress-track" role="progressbar"
+                                 aria-valuemin="0" aria-valuemax="100"
+                                 aria-valuenow="@ProgressWidth"
+                                 aria-label="@ProgressSummary" title="@ProgressSummary">
+                                <div class="progress-fill budget-@BudgetStatusClass"
+                                     style="width: @(ProgressWidth)%"></div>
+                            </div>
+                        }
+                    </div>
+                    </div>
+                }
             </div>
 
             <hr class="sidebar-divider" />
 
             <!-- Cart -->
             <div class="cart-summary-section">
-                <h2>Cart</h2>
-
-                <div class="cart-items">
-                    @foreach (var line in Cart)
-                    {
-                        <div class="cart-item-row">
-                            <div class="cart-item-info">
-                                <div class="item-name">@line.Name</div>
-                                <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
-                            </div>
-                                <div class="cart-item-qty-controls">
-                                    <button class="qty-btn" aria-label="Decrease quantity of @line.Name"
-                                            disabled="@(line.Qty <= 1)" @onclick="() => DecreaseQty(line)">
-                                        −
-                                    </button>
-                                    <span class="cart-item-qty"><span class="visually-hidden">Qty: </span>@line.Qty</span>
-                                    <button class="qty-btn" aria-label="Increase quantity of @line.Name"
-                                            @onclick="() => IncreaseQty(line)">
-                                        +
-                                    </button>
-                                </div>
-                            <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
-                        </div>
-                    }
-                </div>
-
-                <div class="cart-summary-total">
-                    <div class="total-line total-line-main">
-                        Total (incl. GST): $@RunningTotal.ToString("F2")
-                    </div>
-                    <div class="total-line total-line-sub">
-                        Excl. GST: $@TotalExclGst.ToString("F2") &nbsp;·&nbsp; GST: $@GstAmount.ToString("F2")
-                    </div>
-                </div>
-
-                @if (BranchTotals.Any())
-                {
-                    <div class="cart-supermarket-comparison">
-                        <div class="cart-supermarket-comparison-title">Best store for this cart in @SelectedCity:</div>
-                        @foreach (var (branch, total) in BranchTotals)
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("cart") ? "false" : "true")"
+                            aria-controls="section-cart" @onclick="@(() => ToggleSection("cart"))">
+                        <span class="section-title">Cart</span>
+                        @if (IsCollapsed("cart"))
                         {
-                            <div class="supermarket-total-row @(branch == BestOverallBranch ? "best-market" : "")">
-                                <span>@branch.Name @(branch == BestOverallBranch ? "✅" : "")</span>
-                                <span>$@total.ToString("F2")</span>
+                            <span class="section-summary">@CartSummary</span>
+                        }
+                        <svg class="section-chevron @(IsCollapsed("cart") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
+
+                @if (!IsCollapsed("cart"))
+                {
+                    <div class="section-body" id="section-cart">
+
+                    <div class="cart-items">
+                        @foreach (var line in Cart)
+                        {
+                            <div class="cart-item-row">
+                                <div class="cart-item-info">
+                                    <div class="item-name">@line.Name</div>
+                                    <div class="item-price">$@line.UnitPrice.ToString("F2") each</div>
+                                </div>
+                                    <div class="cart-item-qty-controls">
+                                        <button class="qty-btn" aria-label="Decrease quantity of @line.Name"
+                                                disabled="@(line.Qty <= 1)" @onclick="() => DecreaseQty(line)">
+                                            −
+                                        </button>
+                                        <span class="cart-item-qty"><span class="visually-hidden">Qty: </span>@line.Qty</span>
+                                        <button class="qty-btn" aria-label="Increase quantity of @line.Name"
+                                                @onclick="() => IncreaseQty(line)">
+                                            +
+                                        </button>
+                                    </div>
+                                <button class="remove-btn" @onclick="() => RemoveFromCart(line)">✕</button>
                             </div>
                         }
                     </div>
-                }
 
-                <button class="finish-shopping-btn"
-                        disabled="@(!Cart.Any() || Auth.CurrentUser is null)"
-                        @onclick="FinishShopping">
-                    Finish Shopping
-                </button>
-                <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
-                    Create Recipe from Cart
-                </button>
+                    <div class="cart-summary-total">
+                        <div class="total-line total-line-main">
+                            Total (incl. GST): $@RunningTotal.ToString("F2")
+                        </div>
+                        <div class="total-line total-line-sub">
+                            Excl. GST: $@TotalExclGst.ToString("F2") &nbsp;·&nbsp; GST: $@GstAmount.ToString("F2")
+                        </div>
+                    </div>
+
+                    @if (BranchTotals.Any())
+                    {
+                        <div class="cart-supermarket-comparison">
+                            <div class="cart-supermarket-comparison-title">Best store for this cart in @SelectedCity:</div>
+                            @foreach (var (branch, total) in BranchTotals)
+                            {
+                                <div class="supermarket-total-row @(branch == BestOverallBranch ? "best-market" : "")">
+                                    <span>@branch.Name @(branch == BestOverallBranch ? "✅" : "")</span>
+                                    <span>$@total.ToString("F2")</span>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <button class="finish-shopping-btn"
+                            disabled="@(!Cart.Any() || Auth.CurrentUser is null)"
+                            @onclick="FinishShopping">
+                        Finish Shopping
+                    </button>
+                    <button class="create-recipe-btn" disabled="@(!Cart.Any())" @onclick="OpenCreateRecipeModal">
+                        Create Recipe from Cart
+                    </button>
+                    </div>
+                }
             </div>
 
             <hr class="sidebar-divider" />
 
             <!-- Weekly meal plan (FR: schedule recipes for a day of the week) -->
             <div class="recipes-section">
-                <h2>Weekly Meal Plan</h2>
-
-                @if (!Recipes.Any())
-                {
-                    <div class="recipes-empty">No recipes saved yet.</div>
-                }
-                else
-                {
-                    <div class="recipe-week">
-                        @foreach (var day in WeekDays)
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("weekly") ? "false" : "true")"
+                            aria-controls="section-weekly" @onclick="@(() => ToggleSection("weekly"))">
+                        <span class="section-title">Weekly Meal Plan</span>
+                        @if (IsCollapsed("weekly"))
                         {
-                            var dayRecipes = Recipes.Where(r => r.Day == day && ShowsInWeeklyPlan(r)).OrderBy(r => r.Name).ToList();
-
-                            <div class="recipe-day-group @(day == DateTime.Today.DayOfWeek ? "today" : "")">
-                                <div class="recipe-day-heading">@day</div>
-
-                                @if (!dayRecipes.Any())
-                                {
-                                    <div class="recipe-day-empty">—</div>
-                                }
-
-                                @foreach (var recipe in dayRecipes)
-                                {
-                                    <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
-                                        <div class="recipe-card-name">@recipe.Name</div>
-                                        @if (recipe.Date.HasValue)
-                                        {
-                                            <div class="recipe-card-date">📅 @recipe.Date.Value.ToString("ddd d MMM")</div>
-                                        }
-                                        <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
-                                    </div>
-                                }
-                            </div>
+                            <span class="section-summary">@WeeklySummary</span>
                         }
+                        <svg class="section-chevron @(IsCollapsed("weekly") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
 
-                        @{
-                            var unscheduled = Recipes.Where(r => r.Day is null).OrderBy(r => r.Name).ToList();
-                        }
-                        @if (unscheduled.Any())
-                        {
-                            <div class="recipe-day-group">
-                                <div class="recipe-day-heading">Not scheduled</div>
-                                @foreach (var recipe in unscheduled)
-                                {
-                                    <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
-                                        <div class="recipe-card-name">@recipe.Name</div>
-                                        <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    </div>
+                @if (!IsCollapsed("weekly"))
+                {
+                    <div class="section-body" id="section-weekly">
 
-                    @if (OtherDatedRecipesCount > 0)
+                    @if (!Recipes.Any())
                     {
-                        <div class="recipe-other-dates">
-                            <span>
-                                @OtherDatedRecipesCount @(OtherDatedRecipesCount == 1 ? "recipe is" : "recipes are") on other dates
-                            </span>
-                            <button class="edit-ingredients-btn" @onclick="OpenCalendar">View calendar</button>
-                        </div>
+                        <div class="recipes-empty">No recipes saved yet.</div>
                     }
+                    else
+                    {
+                        <div class="recipe-week">
+                            @foreach (var day in WeekDays)
+                            {
+                                var dayRecipes = Recipes.Where(r => r.Day == day && ShowsInWeeklyPlan(r)).OrderBy(r => r.Name).ToList();
+
+                                <div class="recipe-day-group @(day == DateTime.Today.DayOfWeek ? "today" : "")">
+                                    <div class="recipe-day-heading">@day</div>
+
+                                    @if (!dayRecipes.Any())
+                                    {
+                                        <div class="recipe-day-empty">—</div>
+                                    }
+
+                                    @foreach (var recipe in dayRecipes)
+                                    {
+                                        <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                                            <div class="recipe-card-name">@recipe.Name</div>
+                                            @if (recipe.Date.HasValue)
+                                            {
+                                                <div class="recipe-card-date">📅 @recipe.Date.Value.ToString("ddd d MMM")</div>
+                                            }
+                                            <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @{
+                                var unscheduled = Recipes.Where(r => r.Day is null).OrderBy(r => r.Name).ToList();
+                            }
+                            @if (unscheduled.Any())
+                            {
+                                <div class="recipe-day-group">
+                                    <div class="recipe-day-heading">Not scheduled</div>
+                                    @foreach (var recipe in unscheduled)
+                                    {
+                                        <div class="recipe-card" @onclick="() => OpenEditRecipeModal(recipe)">
+                                            <div class="recipe-card-name">@recipe.Name</div>
+                                            <div class="recipe-card-count">@recipe.Ingredients.Count item(s)</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        @if (OtherDatedRecipesCount > 0)
+                        {
+                            <div class="recipe-other-dates">
+                                <span>
+                                    @OtherDatedRecipesCount @(OtherDatedRecipesCount == 1 ? "recipe is" : "recipes are") on other dates
+                                </span>
+                                <button class="edit-ingredients-btn" @onclick="OpenCalendar">View calendar</button>
+                            </div>
+                        }
+                    }
+                    </div>
                 }
             </div>
 
@@ -362,75 +422,95 @@
 
             <!-- Saved recipes: every saved grocery list, upcoming, weekly and past -->
             <div class="saved-recipes-section">
-                <h2>Saved Recipes <span class="saved-count">(@Recipes.Count)</span></h2>
-
-                @if (!Recipes.Any())
-                {
-                    <div class="recipes-empty">No recipes saved yet.</div>
-                }
-                else
-                {
-                    <div class="saved-list">
-                        <div class="saved-filter" role="group" aria-label="Filter saved recipes">
-                            @foreach (var f in SavedFilters)
-                            {
-                                <button class="saved-filter-btn @(SavedFilter == f ? "active" : "")"
-                                        aria-pressed="@(SavedFilter == f ? "true" : "false")"
-                                        @onclick="() => SavedFilter = f">
-                                    @f (@SavedCount(f))
-                                </button>
-                            }
-                        </div>
-
-                        @if (!SavedGroups.Any())
+                <h2 class="section-heading">
+                    <button class="section-toggle" aria-expanded="@(IsCollapsed("saved") ? "false" : "true")"
+                            aria-controls="section-saved" @onclick="@(() => ToggleSection("saved"))">
+                        <span class="section-title">Saved Recipes</span>
+                        @if (IsCollapsed("saved"))
                         {
-                            <div class="recipes-empty">No @SavedFilter.ToLower() recipes.</div>
+                            <span class="section-summary">@SavedSummary</span>
                         }
+                        <svg class="section-chevron @(IsCollapsed("saved") ? "collapsed" : "")" viewBox="0 0 24 24"
+                             width="18" height="18" aria-hidden="true" focusable="false">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </h2>
 
-                        @foreach (var grp in SavedGroups)
-                        {
-                            <div class="saved-group">
-                                <div class="saved-group-heading">@grp.Title</div>
+                @if (!IsCollapsed("saved"))
+                {
+                    <div class="section-body" id="section-saved">
 
-                                @foreach (var recipe in grp.Items)
+                    @if (!Recipes.Any())
+                    {
+                        <div class="recipes-empty">No recipes saved yet.</div>
+                    }
+                    else
+                    {
+                        <div class="saved-list">
+                            <div class="saved-filter" role="group" aria-label="Filter saved recipes">
+                                @foreach (var f in SavedFilters)
                                 {
-                                    var expanded = ExpandedRecipes.Contains(recipe.Id);
-
-                                    <div class="saved-recipe-card @(grp.Title == "Past" ? "past" : "")">
-                                        <div class="saved-recipe-top">
-                                            <button class="saved-recipe-name" title="Open recipe"
-                                                    @onclick="() => OpenEditRecipeModal(recipe)">
-                                                @recipe.Name
-                                            </button>
-                                            <span class="saved-recipe-total">$@RecipeTotal(recipe).ToString("F2")</span>
-                                        </div>
-
-                                        <div class="saved-recipe-meta">
-                                            @ScheduleLabel(recipe) · @recipe.Ingredients.Count item(s)
-                                        </div>
-
-                                        <button class="edit-ingredients-btn saved-toggle"
-                                                aria-expanded="@(expanded ? "true" : "false")"
-                                                @onclick="() => ToggleRecipeItems(recipe.Id)">
-                                            @(expanded ? "Hide items" : "Show items")
-                                        </button>
-
-                                        @if (expanded)
-                                        {
-                                            <ul class="saved-recipe-items">
-                                                @foreach (var line in recipe.Ingredients)
-                                                {
-                                                    <li>
-                                                        <span>@line.Name × @line.Qty</span>
-                                                        <span>$@((line.UnitPrice * line.Qty).ToString("F2"))</span>
-                                                    </li>
-                                                }
-                                            </ul>
-                                        }
-                                    </div>
+                                    <button class="saved-filter-btn @(SavedFilter == f ? "active" : "")"
+                                            aria-pressed="@(SavedFilter == f ? "true" : "false")"
+                                            @onclick="() => SavedFilter = f">
+                                        @f (@SavedCount(f))
+                                    </button>
                                 }
                             </div>
-                        }
+
+                            @if (!SavedGroups.Any())
+                            {
+                                <div class="recipes-empty">No @SavedFilter.ToLower() recipes.</div>
+                            }
+
+                            @foreach (var grp in SavedGroups)
+                            {
+                                <div class="saved-group">
+                                    <div class="saved-group-heading">@grp.Title</div>
+
+                                    @foreach (var recipe in grp.Items)
+                                    {
+                                        var expanded = ExpandedRecipes.Contains(recipe.Id);
+
+                                        <div class="saved-recipe-card @(grp.Title == "Past" ? "past" : "")">
+                                            <div class="saved-recipe-top">
+                                                <button class="saved-recipe-name" title="Open recipe"
+                                                        @onclick="() => OpenEditRecipeModal(recipe)">
+                                                    @recipe.Name
+                                                </button>
+                                                <span class="saved-recipe-total">$@RecipeTotal(recipe).ToString("F2")</span>
+                                            </div>
+
+                                            <div class="saved-recipe-meta">
+                                                @ScheduleLabel(recipe) · @recipe.Ingredients.Count item(s)
+                                            </div>
+
+                                            <button class="edit-ingredients-btn saved-toggle"
+                                                    aria-expanded="@(expanded ? "true" : "false")"
+                                                    @onclick="() => ToggleRecipeItems(recipe.Id)">
+                                                @(expanded ? "Hide items" : "Show items")
+                                            </button>
+
+                                            @if (expanded)
+                                            {
+                                                <ul class="saved-recipe-items">
+                                                    @foreach (var line in recipe.Ingredients)
+                                                    {
+                                                        <li>
+                                                            <span>@line.Name × @line.Qty</span>
+                                                            <span>$@((line.UnitPrice * line.Qty).ToString("F2"))</span>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
                     </div>
                 }
             </div>
@@ -443,10 +523,6 @@
 @* Sticky calendar button *@
 <button class="calendar-fab" aria-label="Open meal calendar" title="Meal calendar" @onclick="OpenCalendar">
     📅
-    @if (UpcomingRecipesCount > 0)
-    {
-        <span class="calendar-fab-count">@UpcomingRecipesCount</span>
-    }
 </button>
 
 @* Meal calendar (month view) *@
@@ -479,22 +555,25 @@
                     var dated = DatedRecipesOn(date);
                     var weekly = ShowWeeklyInCalendar ? WeeklyRecipesOn(date) : new List<Recipe>();
 
-                    <div class="calendar-cell @(date.Month != CalendarMonth.Month ? "other-month" : "") @(date.Date == DateTime.Today ? "today" : "")">
-                        <div class="calendar-cell-header">
-                            <span class="calendar-date-num">@date.Day</span>
-                            <button class="cal-add-btn" title="Add recipe"
-                                    aria-label="Add a recipe on @date.ToString("dddd d MMMM")"
-                                    @onclick="() => OpenCreateRecipeFromCalendar(date)">+</button>
-                        </div>
+                    @* Clicking anywhere on the day opens "New Recipe" for that date.
+                       Clicking a recipe chip opens that recipe instead (stopPropagation). *@
+                    <div class="calendar-cell @(date.Month != CalendarMonth.Month ? "other-month" : "") @(date.Date == DateTime.Today ? "today" : "")"
+                         role="button" tabindex="0"
+                         aria-label="Add a recipe on @date.ToString("dddd d MMMM")"
+                         title="Add a recipe on @date.ToString("ddd d MMM")"
+                         @onclick="() => OpenCreateRecipeFromCalendar(date)"
+                         @onkeydown="e => OnCalendarCellKey(e, date)">
+                        <span class="calendar-date-num">@date.Day</span>
 
                         @foreach (var r in dated)
                         {
-                            <button class="cal-chip" title="@r.Name" @onclick="() => OpenRecipeFromCalendar(r)">@r.Name</button>
+                            <button class="cal-chip" title="@r.Name"
+                                    @onclick="() => OpenRecipeFromCalendar(r)" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">@r.Name</button>
                         }
                         @foreach (var r in weekly)
                         {
                             <button class="cal-chip cal-chip-weekly" title="@r.Name (every @r.Day)"
-                                    @onclick="() => OpenRecipeFromCalendar(r)">↻ @r.Name</button>
+                                    @onclick="() => OpenRecipeFromCalendar(r)" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">↻ @r.Name</button>
                         }
                     </div>
                 }
@@ -503,7 +582,7 @@
             <div class="calendar-legend">
                 <span><span class="legend-swatch legend-dated"></span>On a specific date</span>
                 <span><span class="legend-swatch legend-weekly"></span>↻ Repeats every week</span>
-                <span>Press + on a day to add a recipe</span>
+                <span>Click a day to add a recipe</span>
             </div>
 
             <div class="modal-actions">
@@ -589,7 +668,14 @@
                     <label>Ingredients</label>
                     @if (EditingRecipe is not null && !EditingIngredients)
                     {
-                        <button class="edit-ingredients-btn" @onclick="StartEditIngredients">Edit</button>
+                        <button class="edit-ingredients-btn icon-btn" aria-label="Edit ingredients" title="Edit ingredients"
+                                @onclick="StartEditIngredients">
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z M13.5 6.5l4 4"
+                                      fill="none" stroke="currentColor" stroke-width="2"
+                                      stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </button>
                     }
                     @if (EditingIngredients && EditingRecipe is not null)
                     {
@@ -846,6 +932,7 @@
         Budget = await LocalStorage.GetItemAsync<decimal?>($"{KeyPrefix}_budget");
         BudgetInput = Budget?.ToString() ?? "";
         DealsLastSeen = await LocalStorage.GetItemAsync<DateTime?>($"{KeyPrefix}_deals_seen");
+        CollapsedSections = await LocalStorage.GetItemAsync<HashSet<string>>($"{KeyPrefix}_collapsed") ?? new();
 
         // Recipes saved before day-of-week scheduling only had a calendar date:
         // keep the date and fill in the weekday it falls on.
@@ -1252,7 +1339,6 @@
     private static bool ShowsInWeeklyPlan(Recipe r) => r.Date is null || IsInCurrentWeek(r.Date.Value);
 
     private int OtherDatedRecipesCount => Recipes.Count(r => r.Date.HasValue && !IsInCurrentWeek(r.Date.Value));
-    private int UpcomingRecipesCount => Recipes.Count(r => r.Date.HasValue && r.Date.Value.Date > EndOfThisWeek);
 
     private bool ShowCalendar = false;
     private bool ShowWeeklyInCalendar = true;
@@ -1290,6 +1376,13 @@
     private void NextMonth() => CalendarMonth = CalendarMonth.AddMonths(1);
     private void GoToToday() => CalendarMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
 
+    // Keyboard users: Enter or Space on a focused day opens "New Recipe" for it.
+    private void OnCalendarCellKey(KeyboardEventArgs e, DateTime date)
+    {
+        if (e.Key is "Enter" or " ")
+            OpenCreateRecipeFromCalendar(date);
+    }
+
     private void OpenRecipeFromCalendar(Recipe recipe)
     {
         ShowCalendar = false;
@@ -1318,6 +1411,42 @@
 
         ShowRecipeModal = true;
     }
+
+    // ---------- Collapsible sidebar sections ----------
+    // Budget Planner, Cart, Weekly Meal Plan and Saved Recipes can each be folded away.
+    // Which ones are folded is remembered per user in local storage.
+
+    private HashSet<string> CollapsedSections = new();
+
+    private bool IsCollapsed(string key) => CollapsedSections.Contains(key);
+
+    private async Task ToggleSection(string key)
+    {
+        if (!CollapsedSections.Add(key))
+            CollapsedSections.Remove(key);
+        await LocalStorage.SetItemAsync($"{KeyPrefix}_collapsed", CollapsedSections);
+    }
+
+    // Short line shown next to a folded heading, so the key number is still visible.
+    private string CartSummary =>
+        Cart.Any() ? $"{Cart.Sum(c => c.Qty)} item(s) · ${RunningTotal:F2}" : "Empty";
+
+    private string WeeklySummary
+    {
+        get
+        {
+            var count = Recipes.Count(r => r.Day.HasValue && ShowsInWeeklyPlan(r));
+            return count == 0 ? "Nothing planned" : $"{count} planned";
+        }
+    }
+
+    private string SavedSummary =>
+        Recipes.Count switch
+        {
+            0 => "None saved",
+            1 => "1 recipe",
+            var n => $"{n} recipes"
+        };
 
     // ---------- Saved recipes list (under the weekly plan) ----------
     // Every saved recipe in one place, grouped as Upcoming, Weekly and Past.

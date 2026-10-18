@@ -935,6 +935,23 @@ body {
         opacity: 0.8;
     }
 
+    /* Pencil icon version (Edit ingredients): plain grey, no brand colour */
+    .edit-ingredients-btn.icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 6px;
+        border-radius: 6px;
+        color: #555555;
+        line-height: 1;
+        text-decoration: none;
+    }
+
+        .edit-ingredients-btn.icon-btn:hover {
+            background: #EAF1F8;
+            opacity: 1;
+        }
+
 .ingredient-edit-list {
     display: flex;
     flex-direction: column;
@@ -1223,6 +1240,70 @@ body:has(.app-root.dark) {
         }
 
 /* =========================================================
+   Collapsible sidebar sections (Budget Planner, Cart,
+   Weekly Meal Plan, Saved Recipes)
+   ========================================================= */
+
+.section-heading {
+    margin: 0 0 12px;
+}
+
+button.section-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+    button.section-toggle:focus-visible {
+        outline: 3px solid #8AB4F8;
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+.section-title {
+    flex: 1;
+}
+
+/* Key number shown next to a folded heading (e.g. cart total) */
+.section-summary {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666666;
+    white-space: nowrap;
+}
+
+.section-chevron {
+    flex-shrink: 0;
+    color: #555555;
+    transition: transform 0.2s ease;
+}
+
+    .section-chevron.collapsed {
+        transform: rotate(-90deg);
+    }
+
+/* A folded section only shows its heading, so drop the gap under it */
+.section-heading:has(.section-chevron.collapsed) {
+    margin-bottom: 0;
+}
+
+.app-root.dark .section-summary {
+    color: #B0B0B0;
+}
+
+.app-root.dark .section-chevron {
+    color: #B0B0B0;
+}
+
+/* =========================================================
    Meal calendar: sticky button, month view, date picker
    Button rules use "button.x" so they win over
    ".app-root button { font-size: inherit; }" above.
@@ -1258,22 +1339,6 @@ button.calendar-fab {
         outline: 3px solid #8AB4F8;
         outline-offset: 2px;
     }
-
-.calendar-fab-count {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    background: #B91C1C;
-    color: white;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    line-height: 20px;
-    text-align: center;
-}
 
 /* Month view */
 
@@ -1363,6 +1428,20 @@ button.calendar-nav-btn {
 
     .calendar-cell.today {
         border: 2px solid #2E5B8A;
+    }
+
+/* The whole day opens "New Recipe" */
+.calendar-cell {
+    cursor: pointer;
+}
+
+    .calendar-cell:hover {
+        background: #EAF1F8;
+    }
+
+    .calendar-cell:focus-visible {
+        outline: 3px solid #8AB4F8;
+        outline-offset: 1px;
     }
 
 .calendar-date-num {
@@ -1507,35 +1586,6 @@ button.calendar-icon-btn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
 }
-
-/* Calendar day header: date number + "add recipe" button */
-.calendar-cell-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 2px;
-}
-
-button.cal-add-btn {
-    width: 22px;
-    height: 22px;
-    min-height: 0;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: #2E5B8A;
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 1;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-    button.cal-add-btn:hover,
-    button.cal-add-btn:focus-visible {
-        background: #EAF1F8;
-    }
 
 /* Weekly plan: date on dated recipes, and the "other dates" note */
 
@@ -1764,13 +1814,17 @@ button.saved-recipe-name {
     background: #26303B;
 }
 
-.app-root.dark button.cal-add-btn {
-    color: #8AB4F8;
+.app-root.dark .calendar-cell:hover {
+    background: #26303B;
 }
 
-    .app-root.dark button.cal-add-btn:hover,
-    .app-root.dark button.cal-add-btn:focus-visible {
-        background: #26303B;
+.app-root.dark .edit-ingredients-btn.icon-btn {
+    color: #B0B0B0;
+}
+
+    .app-root.dark .edit-ingredients-btn.icon-btn:hover {
+        background: #2A2A2A;
+        color: #EAEAEA;
     }
 
 .app-root.dark .recipe-form-field .recipe-weekly-toggle input {
@@ -1800,12 +1854,6 @@ button.saved-recipe-name {
     button.cal-chip {
         font-size: 0.6rem;
         padding: 1px 3px;
-    }
-
-    button.cal-add-btn {
-        width: 18px;
-        height: 18px;
-        font-size: 0.85rem;
     }
 }
 
