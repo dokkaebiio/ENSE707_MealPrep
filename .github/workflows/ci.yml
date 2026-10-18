@@ -1,0 +1,66 @@
+# MealPrep CI: runs on every push and pull request to main.
+# Quality gates (any failure blocks the merge once branch protection is on):
+#   1. Data sanity check on items.json / deals.json
+#   2. Restore + build with no compile errors
+#   3. All bUnit/xUnit tests pass (results + coverage uploaded as artefacts)
+#   4. Publish smoke check: the release build contains the files the app needs to start
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: "Gate 1: data sanity check (items.json, deals.json)"
+        run: python3 scripts/check_data.py
+
+      - name: Restore packages
+        run: dotnet restore MealPrep.Tests/MealPrep.Tests.csproj
+
+      - name: "Gate 2: build"
+        run: dotnet build MealPrep.Tests/MealPrep.Tests.csproj --no-restore --configuration Release
+
+      - name: "Gate 3: run tests"
+        run: >
+          dotnet test MealPrep.Tests/MealPrep.Tests.csproj
+          --no-build --configuration Release
+          --logger "trx;LogFileName=test-results.trx"
+          --logger "console;verbosity=normal"
+          --collect:"XPlat Code Coverage"
+          --results-directory TestResults
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+
+      - name: "Gate 4: publish + smoke check"
+        run: |
+          dotnet publish MealPrep.csproj --configuration Release --output publish
+          for f in publish/wwwroot/index.html publish/wwwroot/data/items.json publish/wwwroot/data/deals.json publish/wwwroot/_framework/blazor.webassembly.js; do
+            if [ ! -f "$f" ]; then echo "Smoke check failed: $f missing"; exit 1; fi
+            echo "OK  $f"
+          done
+
+      # Advisory only: reports formatting problems without failing the build.
+      - name: Lint (advisory)
+        continue-on-error: true
+        run: dotnet format MealPrep.Tests/MealPrep.Tests.csproj --verify-no-changes --verbosity minimal
