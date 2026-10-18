@@ -11,25 +11,11 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-// All automated test cases for MealPrep, in one file.
-// Each test method starts with the TC ID used in the Final Project Report (Task 3),
-// so the code, the test case table and the traceability matrix all use the same numbers.
-//
-//   TC-001 to TC-004  FR5, FR6  Cart
-//   TC-005, TC-006    FR10      Budget input
-//   TC-007 to TC-010  FR11      Over-budget pop-up
-//   TC-011            FR6       Search
-//   TC-016            FR3       Suggested budget
-//   TC-017            FR4       Deal notifications
-//   TC-018            FR5       GST breakdown
-//   TC-024            NFR5      Text size accessibility setting
+
 namespace MealPrep.Tests
 {
     public class MealPrepTests : BunitContext
     {
-        // ------------------------------------------------------------------
-        // Test setup
-        // ------------------------------------------------------------------
 
         public MealPrepTests()
         {
