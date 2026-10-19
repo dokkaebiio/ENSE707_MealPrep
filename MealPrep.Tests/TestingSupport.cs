@@ -13,61 +13,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 
 
-// Testing support classes for MealPrep.Tests. These are not tests themselves, but helpers used by the test classes.
-// Provides a fake HTTP backend, test data builders, and a base class for Home page tests that sets up services and common actions.
-// Uses a fake HttpClient to simulate responses for items.json and deals.json without making real HTTP requests.
-// Provides reusable helper methods for interacting with the Home page in tests, such as logging in, seeding spending history, and clicking buttons.
-// This file helps reduce code duplication across test classes and makes it easier to write focused tests for the MealPrep application.
 namespace MealPrep.Tests
 {
-    // Fake HTTP backend shared by every test class (replaces the private handler
-    // that was copy-pasted into each file). Serves items.json and, optionally,
-    // deals.json. Anything else is a 404, like a missing file in the real app.
-    public class FakeAppHandler : HttpMessageHandler
-    {
-        private readonly string _itemsJson;
-        private readonly string? _dealsJson;
-
-        public FakeAppHandler(string itemsJson, string? dealsJson = null)
-        {
-            _itemsJson = itemsJson;
-            _dealsJson = dealsJson;
-        }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            var path = request.RequestUri?.AbsolutePath ?? "";
-
-            if (path.EndsWith("items.json"))
-                return Task.FromResult(JsonResponse(_itemsJson));
-
-            if (path.EndsWith("deals.json") && _dealsJson is not null)
-                return Task.FromResult(JsonResponse(_dealsJson));
-
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
-        }
-
-        private static HttpResponseMessage JsonResponse(string json) =>
-            new(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
-    }
-
-    // Builds items.json content for tests. Every item has a single "Generic"
-    // supermarket price, like the placeholder data used elsewhere.
-    public static class TestData
-    {
-        public static string Item(int id, string name, decimal price, string emoji = "🍎") =>
-            $"{{\"Id\":{id},\"Name\":\"{name}\",\"Category\":\"Fruit\"," +
-            $"\"Prices\":[{{\"Supermarket\":\"Generic\",\"Price\":{price.ToString(CultureInfo.InvariantCulture)}}}]," +
-            $"\"Emoji\":\"{emoji}\"}}";
-
-        public static string Items(params string[] items) => "[" + string.Join(",", items) + "]";
-
-        public static readonly string Apple = Item(1, "Apple", 0.50m, "🍎");
-        public static readonly string Banana = Item(2, "Banana", 0.30m, "🍌");
-    }
-
-    // Base class for every test that renders <Home>. Registers the services the
-    // page needs, so each test class only describes its own scenario.
+    
     public abstract class HomeTestBase : BunitContext
     {
         protected const string DefaultEmail = "tester@example.com";
