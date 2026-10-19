@@ -884,16 +884,20 @@ body {
     background: white;
     padding: 1.5rem;
     border-radius: 8px;
-    max-width: 320px;
+    max-width: min(92vw, 22rem);
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 .modal-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 1rem;
 }
 
     .modal-actions button {
+        flex: 1 1 auto;
         background: #2E5B8A;
         color: white;
         border: none;
@@ -2046,4 +2050,22 @@ button.saved-recipe-name {
         min-height: 44px;
     }
     /* comfortable tap targets */
+}
+
+@media (max-width: 768px) {
+    .app-header {
+        position: relative;
+    }
+
+    .a11y-controls .notif-wrapper {
+        position: static;
+    }
+
+    .notif-panel {
+        left: 0;
+        right: 0;
+        top: calc(100% + 4px);
+        width: auto;
+        max-height: 70vh;
+    }
 }
