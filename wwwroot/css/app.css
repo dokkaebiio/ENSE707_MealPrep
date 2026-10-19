@@ -1881,6 +1881,80 @@ button.saved-recipe-name {
     border-top-color: #333333;
 }
 
+/* Adding saved recipes to the plan */
+
+/* Weekly plan day name: click it to add a saved recipe on that day */
+button.recipe-day-btn {
+    align-self: flex-start;
+    min-height: 0;
+    margin-left: -6px;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+    button.recipe-day-btn:hover,
+    button.recipe-day-btn:focus-visible {
+        background: #EAF1F8;
+        text-decoration: underline;
+    }
+
+/* Saved recipe card: "Show items" and "+ Add to plan" on one row */
+.saved-recipe-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+button.plan-add-btn {
+    min-height: 0;
+    padding: 4px 10px;
+    border: 1px solid #2E5B8A;
+    border-radius: 999px;
+    background: white;
+    color: #2E5B8A;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+    button.plan-add-btn:hover {
+        background: #2E5B8A;
+        color: white;
+    }
+
+.plan-modal-box {
+    width: 100%;
+    max-width: min(92vw, 30rem);
+}
+
+    .plan-modal-box h3 {
+        margin-top: 0;
+    }
+
+.app-root.dark button.recipe-day-btn:hover,
+.app-root.dark button.recipe-day-btn:focus-visible {
+    background: #26303B;
+}
+
+.app-root.dark button.plan-add-btn {
+    background: #2A2A2A;
+    color: #8AB4F8;
+    border-color: #8AB4F8;
+}
+
+    .app-root.dark button.plan-add-btn:hover {
+        background: #8AB4F8;
+        color: #121212;
+    }
+
 /* Dark mode for the calendar pieces */
 
 .app-root.dark .calendar-cell {

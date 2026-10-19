@@ -376,7 +376,11 @@
                                 var dayRecipes = Recipes.Where(r => r.Day == day && ShowsInWeeklyPlan(r)).OrderBy(r => r.Name).ToList();
 
                                 <div class="recipe-day-group @(day == DateTime.Today.DayOfWeek ? "today" : "")">
-                                    <div class="recipe-day-heading">@day</div>
+                                    @* Clicking the day name opens "Add to Meal Plan" for that day this week *@
+                                    <button class="recipe-day-heading recipe-day-btn"
+                                            title="Add a saved recipe on @day"
+                                            aria-label="Add a saved recipe on @day"
+                                            @onclick="() => OpenPlanModalForDate(DateInThisWeek(day))">@day</button>
 
                                     @if (!dayRecipes.Any())
                                     {
@@ -498,11 +502,16 @@
                                                 @ScheduleLabel(recipe) · @recipe.Ingredients.Count item(s)
                                             </div>
 
-                                            <button class="edit-ingredients-btn saved-toggle"
-                                                    aria-expanded="@(expanded ? "true" : "false")"
-                                                    @onclick="() => ToggleRecipeItems(recipe.Id)">
-                                                @(expanded ? "Hide items" : "Show items")
-                                            </button>
+                                            <div class="saved-recipe-actions">
+                                                <button class="edit-ingredients-btn saved-toggle"
+                                                        aria-expanded="@(expanded ? "true" : "false")"
+                                                        @onclick="() => ToggleRecipeItems(recipe.Id)">
+                                                    @(expanded ? "Hide items" : "Show items")
+                                                </button>
+                                                <button class="plan-add-btn" @onclick="() => OpenPlanModalForRecipe(recipe)">
+                                                    + Add to plan
+                                                </button>
+                                            </div>
 
                                             @if (expanded)
                                             {
@@ -593,7 +602,7 @@
             <div class="calendar-legend">
                 <span><span class="legend-swatch legend-dated"></span>On a specific date</span>
                 <span><span class="legend-swatch legend-weekly"></span>↻ Repeats every week</span>
-                <span>Click a day to add a recipe</span>
+                <span>Click a day to add a new or saved recipe</span>
             </div>
 
             <div class="modal-actions">
@@ -627,6 +636,20 @@
     <div class="modal-overlay">
         <div class="modal-box recipe-modal-box">
             <h3>@(EditingRecipe is null ? "New Recipe" : "Edit Recipe")</h3>
+
+            @if (EditingRecipe is null && SavedRecipeChoices.Any())
+            {
+                <div class="recipe-form-field">
+                    <label for="recipe-from-saved">Start from a saved recipe (optional)</label>
+                    <select id="recipe-from-saved" value="@FromSavedKey" @onchange="OnStartFromSaved">
+                        <option value="">Choose a saved recipe…</option>
+                        @foreach (var r in SavedRecipeChoices)
+                        {
+                            <option value="@r.Id">@r.Name (@r.Ingredients.Count item(s))</option>
+                        }
+                    </select>
+                </div>
+            }
 
             <div class="recipe-form-field">
                 <label for="recipe-name">Recipe name</label>
@@ -767,6 +790,64 @@
     </div>
 }
 @* Override or save-as-new prompt, shown when saving changed ingredients *@
+@* Add a saved recipe to the weekly plan / calendar *@
+@if (ShowPlanModal)
+{
+    <div class="modal-overlay">
+        <div class="modal-box plan-modal-box" role="dialog" aria-label="Add a saved recipe to your plan">
+            <h3>Add to Meal Plan</h3>
+
+            <div class="recipe-form-field">
+                <label for="plan-recipe">Saved recipe</label>
+                <select id="plan-recipe" @bind="PlanRecipeKey">
+                    <option value="">Choose a saved recipe…</option>
+                    @foreach (var r in SavedRecipeChoices)
+                    {
+                        <option value="@r.Id">@r.Name (@r.Ingredients.Count item(s))</option>
+                    }
+                </select>
+            </div>
+
+            <div class="recipe-form-field">
+                <label for="plan-date">Date</label>
+                <input type="date" id="plan-date"
+                       value="@(PlanDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))"
+                       @onchange="OnPlanDateChanged" />
+
+                <label class="recipe-weekly-toggle">
+                    <input type="checkbox" @bind="PlanWeekly" />
+                    Repeat every week
+                </label>
+
+                <div class="recipe-date-hint">@PlanHint</div>
+            </div>
+
+            @if (PlanRecipe is not null)
+            {
+                <div class="recipe-ingredients-preview">
+                    <label>Ingredients</label>
+                    <ul>
+                        @foreach (var line in PlanRecipe.Ingredients)
+                        {
+                            <li>@line.Name (x@(line.Qty))</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(PlanError))
+            {
+                <div class="recipe-error">@PlanError</div>
+            }
+
+            <div class="modal-actions">
+                <button @onclick="SavePlan">Add to plan</button>
+                <button @onclick="ClosePlanModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
 @if (ShowOverwritePrompt && EditingRecipe is not null)
 {
     <div class="modal-overlay">
@@ -1509,6 +1590,125 @@
 
     private static decimal RecipeTotal(Recipe r) => r.Ingredients.Sum(i => i.UnitPrice * i.Qty);
 
+    // ---------- Add a saved recipe to the plan (weekly plan + calendar) ----------
+    // Planning a saved recipe adds a copy with the new date (or weekly day),
+    // so the original saved recipe stays as it is.
+
+    // One entry per recipe name, so copies planned on several days aren't listed twice.
+    private List<Recipe> SavedRecipeChoices =>
+        Recipes.GroupBy(r => r.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+               .Select(g => g.Last())
+               .OrderBy(r => r.Name)
+               .ToList();
+
+    private static DateTime DateInThisWeek(DayOfWeek day) => StartOfThisWeek.AddDays(WeekOrder(day));
+
+    private bool ShowPlanModal = false;
+    private string PlanRecipeKey = "";
+    private DateTime? PlanDate;
+    private bool PlanWeekly = false;
+    private string PlanError = "";
+
+    private Recipe? PlanRecipe =>
+        Guid.TryParse(PlanRecipeKey, out var id) ? Recipes.FirstOrDefault(r => r.Id == id) : null;
+
+    private string PlanHint =>
+        PlanDate is null ? "Choose a date." :
+        PlanWeekly ? $"Repeats every {PlanDate.Value.DayOfWeek}." :
+        $"Only on {PlanDate.Value:dddd d MMMM yyyy}.";
+
+    // From a Saved Recipes card: recipe chosen, date starts as today.
+    private void OpenPlanModalForRecipe(Recipe recipe)
+    {
+        var match = SavedRecipeChoices.FirstOrDefault(r =>
+            string.Equals(r.Name.Trim(), recipe.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+        PlanRecipeKey = (match ?? recipe).Id.ToString();
+        PlanDate = DateTime.Today;
+        PlanWeekly = false;
+        PlanError = "";
+        ShowPlanModal = true;
+    }
+
+    // From "+ Add" on a weekly plan day: date chosen, user picks the recipe.
+    private void OpenPlanModalForDate(DateTime date)
+    {
+        PlanRecipeKey = "";
+        PlanDate = date.Date;
+        PlanWeekly = false;
+        PlanError = "";
+        ShowPlanModal = true;
+    }
+
+    private void OnPlanDateChanged(ChangeEventArgs e)
+    {
+        PlanDate = DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var d) ? d : null;
+    }
+
+    private async Task SavePlan()
+    {
+        var source = PlanRecipe;
+        if (source is null) { PlanError = "Please choose a saved recipe."; return; }
+        if (PlanDate is null) { PlanError = "Please choose a date."; return; }
+
+        var day = PlanDate.Value.DayOfWeek;
+        DateTime? date = PlanWeekly ? null : PlanDate.Value.Date;
+
+        // Don't add the same recipe twice to the same slot.
+        var alreadyPlanned = Recipes.Any(r =>
+            string.Equals(r.Name.Trim(), source.Name.Trim(), StringComparison.OrdinalIgnoreCase) &&
+            r.Day == day && r.Date?.Date == date);
+        if (alreadyPlanned)
+        {
+            PlanError = PlanWeekly
+                ? $"{source.Name} already repeats every {day}."
+                : $"{source.Name} is already planned for {PlanDate.Value:ddd d MMM}.";
+            return;
+        }
+
+        Recipes.Add(new Recipe
+        {
+            Name = source.Name.Trim(),
+            Day = day,
+            Date = date,
+            Ingredients = CopyIngredients(source.Ingredients)
+        });
+
+        await SaveRecipesAsync();
+        ClosePlanModal();
+    }
+
+    private void ClosePlanModal()
+    {
+        ShowPlanModal = false;
+        PlanRecipeKey = "";
+        PlanDate = null;
+        PlanWeekly = false;
+        PlanError = "";
+    }
+
+    // "Start from a saved recipe" in the New Recipe popup (the calendar opens this):
+    // fills in the name and ingredients, which can still be changed before saving.
+    private string FromSavedKey = "";
+
+    private void OnStartFromSaved(ChangeEventArgs e)
+    {
+        FromSavedKey = e.Value?.ToString() ?? "";
+        if (!Guid.TryParse(FromSavedKey, out var id))
+            return;
+
+        var source = Recipes.FirstOrDefault(r => r.Id == id);
+        if (source is null)
+            return;
+
+        RecipeNameInput = source.Name;
+        IngredientDraft = CopyIngredients(source.Ingredients);
+        AddIngredientItemId = null;
+        EditingIngredients = true;
+        RecipeErrorMessage = "";
+    }
+
     private void ToggleRecipeItems(Guid id)
     {
         if (!ExpandedRecipes.Add(id))
@@ -1765,6 +1965,7 @@
         ShowRecipeModal = false;
         EditingRecipe = null;
         RecipeErrorMessage = "";
+        FromSavedKey = "";
         EditingIngredients = false;
         IngredientDraft = new();
         AddIngredientItemId = null;
